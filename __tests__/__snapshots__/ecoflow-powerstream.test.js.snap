@@ -1,0 +1,101 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ecoflow-powerstream Node should convert binary payload 1`] = `
+[
+  {
+    "payload": {
+      "cmdFunc": 20,
+      "cmdId": 1,
+      "data": {
+        "batInputVolt": 537,
+        "invOutputCur": 712,
+        "invOutputWatts": 1425,
+        "llcOpVolt": 4408,
+        "pv1InputVolt": 348,
+        "pv1InputWatts": 485,
+        "pv1OpVolt": 3458,
+        "pv2InputVolt": 339,
+        "pv2InputWatts": 1985,
+        "pv2OpVolt": 3391,
+      },
+      "deviceSn": "HW51ZEH000000000",
+      "msgType": "InverterHeartbeat",
+      "payloadVer": 3,
+      "version": 3,
+    },
+    "topic": "/ecoflow/powerstream",
+  },
+  {
+    "payload": {
+      "cmdFunc": 20,
+      "cmdId": 4,
+      "data": {
+        "X_Unknown_15": 866,
+        "X_Unknown_16": -8,
+        "X_Unknown_17": 569070,
+        "X_Unknown_18": 56240,
+        "X_Unknown_24": 7976,
+        "X_Unknown_27": 7976,
+        "gridWatt_45": 1418,
+        "uptime": 8024,
+      },
+      "deviceSn": "HW51ZEH000000000",
+      "msgType": "InverterHeartbeat2",
+      "payloadVer": 3,
+      "version": 3,
+    },
+    "topic": "/ecoflow/powerstream",
+  },
+  {
+    "payload": {
+      "cmdFunc": 20,
+      "cmdId": 1,
+      "data": {
+        "batInputWatts": -924,
+        "invOutputWatts": 1418,
+        "pv1InputVolt": 343,
+        "pv1OpVolt": 3433,
+        "pv2InputVolt": 343,
+        "pv2OpVolt": 3439,
+      },
+      "deviceSn": "HW51ZEH000000000",
+      "msgType": "InverterHeartbeat",
+      "payloadVer": 3,
+      "version": 3,
+    },
+    "topic": "/ecoflow/powerstream",
+  },
+  {
+    "payload": {
+      "cmdFunc": 20,
+      "cmdId": 4,
+      "data": {
+        "X_Unknown_15": 843,
+        "X_Unknown_17": 569240,
+        "X_Unknown_24": 7973,
+        "gridWatt_45": 1409,
+        "uptime": 8018,
+      },
+      "deviceSn": "HW51ZEH000000000",
+      "msgType": "InverterHeartbeat2",
+      "payloadVer": 3,
+      "version": 3,
+    },
+    "topic": "/ecoflow/powerstream",
+  },
+  {
+    "payload": {
+      "batInputVolt": 53.7,
+      "batInputWatts": -92.4,
+      "deviceSn": "HW51ZEH000000000",
+      "invOutputWatts": 141.8,
+      "pv1InputWatts": 48.5,
+      "pv1OpVolt": 343.3,
+      "pv2InputWatts": 198.5,
+      "pv2OpVolt": 343.9,
+      "pvInputWatts": 239.6,
+    },
+    "topic": "/ecoflow/powerstream/aggregated",
+  },
+]
+`;

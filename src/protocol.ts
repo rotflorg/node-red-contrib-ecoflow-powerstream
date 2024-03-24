@@ -127,7 +127,7 @@ message InverterHeartbeat2 {
   optional int32 X_Unknown_30 = 30;
   optional int32 X_Unknown_31 = 31;
   optional int32 uptime = 32;
-  optional int32 X_Unknown_33 = 33; 
+  optional int32 X_Unknown_33 = 33;
   optional int32 X_Unknown_34 = 34;
   optional int32 X_Unknown_35 = 35;
   optional int32 X_Unknown_36 = 36;
@@ -399,7 +399,7 @@ export interface IMessageInfo {
 
 export const POWERSTREAM_MESSAGES: {[cmdId: string]: IMessageInfo} = {
   '1': { name: 'InverterHeartbeat', cmdFunc: 20 },
-  '4': { name: 'InverterHeartbeat2', cmdFunc: 20, ignore: true },
+  '4': { name: 'InverterHeartbeat2', cmdFunc: 20, },
   '11':  { name: 'setValue', cmdFunc: 32, key: 'Ping' },
   '32': { name: 'PowerPack32', cmdFunc: 254, ignore: true },
   '134': { name: 'time_task_config_post', cmdFunc: 20, ignore: true },
