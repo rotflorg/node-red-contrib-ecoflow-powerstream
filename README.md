@@ -37,8 +37,3 @@ Back in the "mqtt in" node, set:
 * Topic: "/app/device/property/" + PowerStream searial number
 * QoS: 2
 * Output: binary buffer
-
-### More information
-
-For more information on how to install your Ecoflow device as MQTT source, see
-[here](https://konkludenz.de/en/making-ecoflow-wave-2-smart-home-capable-with-node-red-and-mqtt/).
