@@ -1,5 +1,5 @@
 {
-  "name": "node-red-contrib-ecoflow-powerstream",
+  "name": "@rotflorg/red-contrib-ecoflow-powerstream",
   "version": "0.1.0",
   "description": "Extract data from Ecoflow PowerStream",
   "main": "dist/index.js",
@@ -21,6 +21,10 @@
   ],
   "author": "Johannes Schmid",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rotflorg/node-red-contrib-ecoflow-powerstream.git"
+  },
   "node-red": {
     "nodes": {
       "PowerstreamMQTT": "dist/powerstream.js"
@@ -36,5 +40,9 @@
     "eslint": "^8.57.0",
     "typescript": "^5.4.3",
     "ts-node": "^10.9.2"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/rotflorg/node-red-contrib-ecoflow-powerstream/issues"
+  },
+  "homepage": "https://github.com/rotflorg/node-red-contrib-ecoflow-powerstream#readme"
 }
