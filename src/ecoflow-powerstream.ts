@@ -22,21 +22,28 @@ const nodeInit: NodeInitializer = (RED): void => {
     RED.nodes.createNode(node, config);
     const timedOutListener: TimedOutListener = (state) => {
       node.send(state.buildMessage());
+      node.status({fill: 'red', shape: 'dot', text: 'Timed out'});
     };
     const state = new JoinedState(POWERSTREAM_CONFIG, timedOutListener);
     node.on('input', (msg) => {
       if (!Buffer.isBuffer(msg.payload)) {
         return;
       }
+      const topic = msg.topic || '/ecoflow/powerstream';
       const buffer = new Uint8Array(toArrayBuffer(msg.payload));
-      let send = false;
-      for (const msg of decodeEcoflowMessage(parser, buffer)) {
-        if (state.apply('/pferd/heide', msg)) {
-          send = true;
+      let sendJoined = false;
+      for (const payload of decodeEcoflowMessage(parser, buffer)) {
+        if (state.apply(topic, payload)) {
+          sendJoined = true;
         }
+        node.send({topic, payload});
       }
-      if (send) {
-        node.send(msg);
+      if (sendJoined) {
+        const joinedMessage = state.buildMessage();
+        if (joinedMessage) {
+          node.send(joinedMessage);
+          node.status({ fill: 'green', shape: 'dot', text: 'Connected' });
+        }
       }
     });
     node.on('close', (done: any) => {
