@@ -25,8 +25,11 @@ const nodeInit: NodeInitializer = (RED): void => {
     const node: Node = this;
     /* eslint-enable @typescript-eslint/no-this-alias */
     RED.nodes.createNode(node, config);
+    const outmsgtype = String(config?.outmsgtype || '');
     const timedOutListener: TimedOutListener = (state) => {
-      node.send(state.buildMessage());
+      if (outmsgtype !== 'translated') {
+        node.send(state.buildMessage());
+      }
       node.status({fill: 'red', shape: 'dot', text: 'Timed out'});
     };
     const state = new JoinedState(POWERSTREAM_CONFIG, timedOutListener);
@@ -41,12 +44,16 @@ const nodeInit: NodeInitializer = (RED): void => {
         if (state.apply(topic, payload)) {
           sendJoined = true;
         }
-        node.send({topic, payload});
+        if (outmsgtype !== 'aggregated') {
+          node.send({topic, payload});
+        }
       }
       if (sendJoined) {
         const joinedMessage = state.buildMessage();
         if (joinedMessage) {
-          node.send(joinedMessage);
+          if (outmsgtype !== 'translated') {
+            node.send(joinedMessage);
+          }
           node.status({ fill: 'green', shape: 'dot', text: 'Connected' });
         }
       }

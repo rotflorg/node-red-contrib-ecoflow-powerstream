@@ -3,13 +3,28 @@
     category: 'function',
     color: '#a6bbcf',
     defaults: {
-      name: { value: '' }
+      name: { value: '' },
+      outmsgtype: { value: 'both' },
     },
     inputs: 1,
     outputs: 1,
-    icon: "file.svg",
+    icon: "function.svg",
     label: function() {
       return this.name || 'ecoflow-powerstream';
+    },
+    oneditprepare: function() {
+      $("#node-input-outmsgtype").typedInput({
+        types: [
+          {
+            value: "outmsgtype",
+            options: [
+              { value: "aggregated", label: "Aggregated only"},
+              { value: "translated", label: "Translated only"},
+              { value: "both", label: "Both"},
+            ]
+          }
+        ]
+      })
     }
   });
 </script>
@@ -18,6 +33,10 @@
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
     <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-outmsgtype">Output message types</label>
+    <input type="text" id="node-input-outmsgtype">
   </div>
 </script>
 
