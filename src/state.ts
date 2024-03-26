@@ -96,13 +96,7 @@ export class JoinedState {
     if (changed) {
       this.checkReady();
       if (!this.timer && this.ready && this.timedOutListener) {
-        this.timer = setInterval(() => {
-          if (this.checkReady()) {
-            if (this.ready) {
-              this.timedOutListener?.(this);
-            }
-          }
-        }, 5000);
+        this.startIntervalTimer();
       }
     }
     return changed;
@@ -163,5 +157,26 @@ export class JoinedState {
     }
     this.ready = ready;
     return changed;
+  }
+  private startIntervalTimer(): void {
+    if (this.timer || this.isShutdown) {
+      return;
+    }
+    const timer = setInterval(() => {
+      if (this.isShutdown) {
+        clearInterval(timer);
+        if (this.timer===timer) {
+          this.timer = undefined;
+        }
+        return;
+      }
+      if (!this.checkReady()) {
+        return;
+      }
+      if (this.ready) {
+        this.timedOutListener?.(this);
+      }
+    }, 5000);
+    this.timer = timer;
   }
 }

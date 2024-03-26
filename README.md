@@ -22,7 +22,7 @@ Tab "Connection":
 * Server: host from bash script output, e.g. mqtt-e.ecoflow.com
 * Port: port from bash script output, e.g. 8884
 * Connect automatically: yes
-* TLS: ys
+* TLS: yes
 * Protocol: MQTT V3.1.1
 * Client-ID: output from bash script
 * Keep-Alive: 60
@@ -34,6 +34,6 @@ Tab "Security":
 
 Back in the "mqtt in" node, set:
 * Action: Subscribe to single topic
-* Topic: "/app/device/property/" + PowerStream searial number
-* QoS: 2
+* Topic: "/app/device/property/" + PowerStream serial number
+* QoS: 0
 * Output: binary buffer
