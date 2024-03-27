@@ -31,6 +31,7 @@
   "node-red": {
     "version": ">=2.0.0",
     "nodes": {
+      "ecoflow-delta2max": "dist/ecoflow-delta2max.js",
       "ecoflow-powerstream": "dist/ecoflow-powerstream.js"
     }
   },

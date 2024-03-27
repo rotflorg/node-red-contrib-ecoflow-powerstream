@@ -14,8 +14,9 @@ export interface IEcoflowMessage {
   cmdFunc: number;
   msgType: string;
   deviceSn: string;
-  version: number;
-  payloadVer: number;
+  version?: number;
+  timestamp?: number;
+  payloadVer: number|string;
   data: any;
 }
 

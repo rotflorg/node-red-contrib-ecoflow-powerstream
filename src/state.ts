@@ -7,7 +7,7 @@ export interface IFieldConfigValue {
   outputName?: string;
   undefValue: number;
   timeoutMs: number;
-  formatFn: (input: number) => number;
+  formatFn?: (input: number) => number;
   required?: boolean;
 }
 
@@ -35,6 +35,7 @@ function formatDigit(input: number): number {
 export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
   values: [
     { name: 'batInputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
+    { name: 'batSoc', undefValue: 0, timeoutMs: 60000 },
     { name: 'batInputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
     { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
     { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
@@ -48,6 +49,31 @@ export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
       }}
   ]
 };
+
+export const DELTA2MAX_CONFIG: IJoinedStateConfig = {
+  values: [
+    { name: 'bms_emsStatus_f32LcdShowSoc', undefValue: 0, timeoutMs: 60000, required: true },
+    { name: 'bms_bmsStatus_f32ShowSoc', undefValue: 0, timeoutMs: 60000, required: true },
+    { name: 'bms_bmsStatus_minCellVol', undefValue: 0, timeoutMs: 60000 },
+    { name: 'bms_bmsStatus_maxCellVol', undefValue: 0, timeoutMs: 60000 },
+    { name: 'bms_bmsStatus_vol', undefValue: 0, timeoutMs: 60000 },
+    { name: 'bms_bmsStatus_chgVol', undefValue: 0, timeoutMs: 60000 },
+    { name: 'bms_bmsStatus_inputWatts', undefValue: 0, timeoutMs: 60000 },
+    { name: 'bms_kitInfo_watts0', undefValue: 0, timeoutMs: 60000 },
+    { name: 'bms_kitInfo_watts1', undefValue: 0, timeoutMs: 60000 },
+    { name: 'mppt_inWatts', undefValue: 0, timeoutMs: 60000 },
+    { name: 'mppt_pv2InWatts', undefValue: 0, timeoutMs: 60000 },
+    { name: 'inv_inputWatts', undefValue: 0, timeoutMs: 60000 },
+    { name: 'inv_outputWatts', undefValue: 0, timeoutMs: 60000 },
+  ],
+  compute: [
+    { name: 'mppt_pvInputWatts', computeFn: (payload: any): number => {
+        return Math.round(((payload.mppt_inWatts || 0) + (payload.mppt_pv2InWatts || 0)) * 9.7) / 10;
+      }}
+  ]
+};
+
+
 
 export type TimedOutListener = (state: JoinedState) => void;
 
@@ -110,7 +136,7 @@ export class JoinedState {
       if (!val.available) {
         continue;
       }
-      payload[val.config.name] = val.config.formatFn(val.value)
+      payload[val.config.name] = val.config.formatFn ? val.config.formatFn(val.value) : val.value;
     }
     for (const config of this.jjconfig.compute) {
       payload[config.name] = config.computeFn(payload);
