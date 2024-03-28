@@ -31,11 +31,14 @@ export interface IFieldState {
 function formatDigit(input: number): number {
   return input / 10;
 }
+function formatMillis(input: number): number {
+  return input / 1000;
+}
 
 export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
   values: [
     { name: 'batInputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
-    { name: 'batSoc', undefValue: 0, timeoutMs: 60000 },
+    { name: 'batSoc', undefValue: 0, timeoutMs: 600000 },
     { name: 'batInputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
     { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
     { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
@@ -54,11 +57,7 @@ export const DELTA2MAX_CONFIG: IJoinedStateConfig = {
   values: [
     { name: 'bms_emsStatus_f32LcdShowSoc', undefValue: 0, timeoutMs: 60000, required: true },
     { name: 'bms_bmsStatus_f32ShowSoc', undefValue: 0, timeoutMs: 60000, required: true },
-    { name: 'bms_bmsStatus_minCellVol', undefValue: 0, timeoutMs: 60000 },
-    { name: 'bms_bmsStatus_maxCellVol', undefValue: 0, timeoutMs: 60000 },
-    { name: 'bms_bmsStatus_vol', undefValue: 0, timeoutMs: 60000 },
-    { name: 'bms_bmsStatus_chgVol', undefValue: 0, timeoutMs: 60000 },
-    { name: 'bms_bmsStatus_inputWatts', undefValue: 0, timeoutMs: 60000 },
+    { name: 'bms_bmsStatus_vol', undefValue: 0, formatFn: formatMillis, timeoutMs: 60000 },
     { name: 'bms_kitInfo_watts0', undefValue: 0, timeoutMs: 60000 },
     { name: 'bms_kitInfo_watts1', undefValue: 0, timeoutMs: 60000 },
     { name: 'mppt_inWatts', undefValue: 0, timeoutMs: 60000 },
@@ -68,7 +67,7 @@ export const DELTA2MAX_CONFIG: IJoinedStateConfig = {
   ],
   compute: [
     { name: 'mppt_pvInputWatts', computeFn: (payload: any): number => {
-        return Math.round(((payload.mppt_inWatts || 0) + (payload.mppt_pv2InWatts || 0)) * 9.7) / 10;
+        return Math.floor(((payload.mppt_inWatts || 0) + (payload.mppt_pv2InWatts || 0)));
       }}
   ]
 };
