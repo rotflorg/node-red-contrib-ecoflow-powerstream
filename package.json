@@ -31,7 +31,8 @@
   "node-red": {
     "version": ">=2.0.0",
     "nodes": {
-      "ecoflow-in": "dist/ecoflow-in.js"
+      "ecoflow-in": "dist/ecoflow-in.js",
+      "ecoflow-out": "dist/ecoflow-out.js"
     }
   },
   "dependencies": {

@@ -1,0 +1,54 @@
+<script type="text/javascript">
+  RED.nodes.registerType('ecoflow-out', {
+    category: 'function',
+    color: '#a6bbcf',
+    defaults: {
+      name: { value: '' },
+      devicetype: { value: 'powerstream' },
+      userid: { value: 'app-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' },
+      devicesn: { value: 'HW51ZXXXXXXXXXXX' },
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: "function.svg",
+    label: function() {
+      return this.name || 'ecoflow-out';
+    },
+    oneditprepare: function() {
+      $("#node-input-devicetype").typedInput({
+        types: [
+          {
+            value: "devicetype",
+            options: [
+              { value: "powerstream", label: "PowerStream 600/800 micro inverter"},
+            ]
+          }
+        ]
+      });
+    }
+  });
+</script>
+
+<script type="text/html" data-template-name="ecoflow-out">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-devicetype">Device type</label>
+    <input type="text" id="node-input-devicetype">
+  </div>
+  <div class="form-row">
+    <label for="node-input-userid"><i class="fa fa-user"></i> User ID</label>
+    <input type="text" id="node-input-userid" placeholder="app-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX">
+  </div>
+  <div class="form-row">
+    <label for="node-input-devicesn"><i class="fa fa-barcode"></i> Serial Number</label>
+    <input type="text" id="node-input-devicesn" placeholder="HW51ZXXXXXXXXXXX">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="ecoflow-out">
+  <p>This node converts the JSON messages to Ecoflow /app/USERID/SN/thing/property/set messages payloads in binary MQTT output binary format.</p>
+  <p>Currently, only Ping and SetAC messages are supported.</p>
+</script>
