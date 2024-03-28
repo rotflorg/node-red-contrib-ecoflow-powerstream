@@ -1,6 +1,5 @@
 import { IParserResult, parse } from 'protobufjs';
 import { IMessageInfo, POWERSTREAM_MESSAGES, PROTOCOL_SOURCE } from './protocol';
-import console from 'console';
 
 
 export class ParseError extends Error {
@@ -43,7 +42,6 @@ export function decodeEcoflowMessage(parser: IParserResult, buffer: Uint8Array):
     }
     const messageInfo: IMessageInfo = POWERSTREAM_MESSAGES[String(header.cmdId)];
     if (!messageInfo || (messageInfo.cmdFunc && messageInfo.cmdFunc!==header.cmdFunc)) {
-      console.log('Not found');
       continue;
     }
     if (messageInfo.ignore) {

@@ -1,5 +1,5 @@
 <script type="text/javascript">
-  RED.nodes.registerType('ecoflow-delta2max', {
+  RED.nodes.registerType('ecoflow-in', {
     category: 'function',
     color: '#a6bbcf',
     defaults: {
@@ -10,9 +10,20 @@
     outputs: 1,
     icon: "function.svg",
     label: function() {
-      return this.name || 'ecoflow-delta2max';
+      return this.name || 'ecoflow-in';
     },
     oneditprepare: function() {
+      $("#node-input-devicetype").typedInput({
+        types: [
+          {
+            value: "devicetype",
+            options: [
+              { value: "powerstream", label: "PowerStream 600/800 micro inverter"},
+              { value: "delta2max", label: "Delta 2 Max power station"},
+            ]
+          }
+        ]
+      });
       $("#node-input-outmsgtype").typedInput({
         types: [
           {
@@ -24,15 +35,19 @@
             ]
           }
         ]
-      })
+      });
     }
   });
 </script>
 
-<script type="text/html" data-template-name="ecoflow-delta2max">
+<script type="text/html" data-template-name="ecoflow-in">
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
     <input type="text" id="node-input-name" placeholder="Name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-devicetype">Device type</label>
+    <input type="text" id="node-input-devicetype">
   </div>
   <div class="form-row">
     <label for="node-input-outmsgtype">Output message types</label>
@@ -40,6 +55,6 @@
   </div>
 </script>
 
-<script type="text/html" data-help-name="ecoflow-delta2max">
-  <p>A simple node that aggregates the Ecoflow Delta2Max JSON MQTT message payloads.</p>
+<script type="text/html" data-help-name="ecoflow-in">
+  <p>This node converts the Ecoflow messages payloads coming from an /app/device/property/SN MQTT input into aggregated JSON format.</p>
 </script>
