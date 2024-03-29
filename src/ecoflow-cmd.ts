@@ -4,7 +4,7 @@ import { Buffer, IParserResult } from 'protobufjs';
 
 
 
-const NODE_TYPE = String('ecoflow-out');
+const NODE_TYPE = String('ecoflow-cmd');
 
 type DeviceType = 'powerstream';
 
@@ -13,29 +13,32 @@ interface IConvertedMessage {
   method: 'get' | 'set';
 }
 
-function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, config: any): IConvertedMessage|undefined {
+function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, deviceSn: string): IConvertedMessage|string {
   if (!msg.payload || typeof msg.payload !== 'object') {
-    return;
+    return 'No JSON';
   }
-  const pl = msg.payload;
-  const key = Object.keys(pl)[0];
-  if (!key) {
-    return;
+  const pl = msg.payload as any;
+  const command = pl.command;
+  if (typeof command !== 'string') {
+    return 'No command defined';
   }
-  let val: any = (pl as any)[key];
+  let val: any = pl.value;
   if (typeof val === 'string') {
     val = parseInt(val, 10);
     if (isNaN(val)) {
-      return;
+      return 'Invalid value';
     }
   }
   if (typeof val !== 'number') {
-    return;
+    return 'Invalid value type';
   }
-  switch (key) {
+  switch (command) {
     case 'getLatestQuotas':
       return { method: 'get', payload: encodeSetMessage(parser, { src: 32, dest: 32 }) };
     case 'setAcWatts':
+      if (val<0 || val>800) {
+        return `Invalid watts: ${val}`;
+      }
       return { method: 'set', payload: encodeSetMessage(parser, {
           pdata: { value: Math.max(1, Math.round(val*10)) },
           src: 32,
@@ -48,7 +51,7 @@ function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, conf
           needAck: 1,
           version: 19,
           payloadVer: 1,
-          deviceSn: config.devicesn,
+          deviceSn,
         }) };
     case 'setPrioritizePowerStorage':
       return { method: 'set', payload: encodeSetMessage(parser, {
@@ -63,11 +66,11 @@ function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, conf
           needAck: 1,
           version: 19,
           payloadVer: 1,
-          deviceSn: config.devicesn,
+          deviceSn,
         }) };
     case 'ping':
       return { method: 'set', payload: encodeSetMessage(parser, {
-          pdata: { value: Math.round(val) },
+          pdata: { value: Math.round(val)%65536 },
           src: 32,
           dest: 53,
           dSrc: 1,
@@ -78,9 +81,10 @@ function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, conf
           needAck: 1,
           version: 19,
           payloadVer: 1,
-          deviceSn: config.devicesn,
+          deviceSn,
         }) };
   }
+  return `Unknown command ${command}`;
 }
 
 
@@ -94,16 +98,29 @@ const nodeInit: NodeInitializer = (RED): void => {
     RED.nodes.createNode(node, config);
     const devicetype = String(config?.devicetype || 'powerstream') as DeviceType;
     node.on('input', (msg) => {
-      let converted: IConvertedMessage | undefined;
-      if (devicetype === 'powerstream') {
-        converted = processPowerstreamMessage(msg, parser, config || { });
+      if (typeof config?.userid !== 'string') {
+        node.status({ fill: 'red', shape: 'dot', text: 'User ID not configured' });
+        return;
       }
-      if (!converted || !config.devicesn) {
-        node.status({ fill: 'red', shape: 'dot', text: 'Invalid data received' });
+      let converted: IConvertedMessage | string | undefined;
+      const deviceSn = (msg.payload as any)?.deviceSn;
+      if (typeof deviceSn !== 'string') {
+        node.status({ fill: 'red', shape: 'dot', text: 'Missing deviceSn in message' });
+        return;
+      }
+      if (devicetype === 'powerstream') {
+        converted = processPowerstreamMessage(msg, parser, deviceSn);
+      }
+      if (!converted) {
+        node.status({ fill: 'red', shape: 'dot', text: 'Invalid device type' });
+        return;
+      }
+      if (typeof converted === 'string') {
+        node.status({ fill: 'red', shape: 'dot', text: `Invalid message: ${converted}` });
         return;
       }
       const sendmsg: NodeMessage = {
-        topic: `/app/${config.userid||'device'}/${config.devicesn}/thing/property/${converted.method}`,
+        topic: `/app/${config.userid}/${deviceSn}/thing/property/${converted.method}`,
         payload: converted.payload,
       }
       node.send(sendmsg);

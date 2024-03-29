@@ -1,12 +1,12 @@
 var helper = require('node-red-node-test-helper');
-var testNode = require('../dist/ecoflow-out.js');
+var testNode = require('../dist/ecoflow-cmd.js');
 
 helper.init(require.resolve('node-red'), {
   functionGlobalContext: { os:require('os') }
 });
 
 
-describe('ecoflow-out Node', function () {
+describe('ecoflow-cmd Node', function () {
   let dateNowSpy;
   beforeEach(function (done) {
     helper.startServer(done);
@@ -19,7 +19,7 @@ describe('ecoflow-out Node', function () {
   });
 
   it('should be loaded', function (done) {
-    const flow = [{ id: 'n1', type: 'ecoflow-out', name: 'test name' }];
+    const flow = [{ id: 'n1', type: 'ecoflow-cmd', name: 'test name' }];
     helper.load(testNode, flow, {}, function () {
       const n1 = helper.getNode('n1');
       expect(n1.name).toEqual('test name');
@@ -28,7 +28,7 @@ describe('ecoflow-out Node', function () {
   });
 
   it('should convert PowerStream getLatestQuotas payload', function (done) {
-    const flow = [{ id: 'n1', type: 'ecoflow-out', name: 'test name', devicetype: 'powerstream', devicesn: 'HW51ZEH000000000', wires: [['n2']] }, { id: 'n2', type: 'helper' }];
+    const flow = [{ id: 'n1', type: 'ecoflow-cmd', name: 'test name', devicetype: 'powerstream', wires: [['n2']] }, { id: 'n2', type: 'helper' }];
     helper.load(testNode, flow, function () {
       const n2 = helper.getNode('n2');
       const n1 = helper.getNode('n1');
@@ -38,7 +38,7 @@ describe('ecoflow-out Node', function () {
         delete copy._msgid;
         receivedMessages.push(copy);
       });
-      n1.receive({ payload: { getLatestQuotas: 1 } });
+      n1.receive({ payload: { command: 'getLatestQuotas', value: 1, deviceSn: 'HW51ZEH000000000' } });
       setTimeout(function() {
         expect(receivedMessages).toMatchSnapshot();
         done();
@@ -47,7 +47,7 @@ describe('ecoflow-out Node', function () {
   });
 
   it('should convert PowerStream setAcWatts payload', function (done) {
-    const flow = [{ id: 'n1', type: 'ecoflow-out', name: 'test name', devicetype: 'powerstream', devicesn: 'HW51ZEH000000000', wires: [['n2']] }, { id: 'n2', type: 'helper' }];
+    const flow = [{ id: 'n1', type: 'ecoflow-cmd', name: 'test name', devicetype: 'powerstream', wires: [['n2']] }, { id: 'n2', type: 'helper' }];
     helper.load(testNode, flow, function () {
       const n2 = helper.getNode('n2');
       const n1 = helper.getNode('n1');
@@ -57,7 +57,7 @@ describe('ecoflow-out Node', function () {
         delete copy._msgid;
         receivedMessages.push(copy);
       });
-      n1.receive({ payload: { setAcWatts: 100 } });
+      n1.receive({ payload: { command: 'setAcWatts', value: 100, deviceSn: 'HW51ZEH000000000' } });
       setTimeout(function() {
         expect(receivedMessages).toMatchSnapshot();
         done();

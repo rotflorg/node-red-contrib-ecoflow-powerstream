@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ecoflow-cmd Node should convert PowerStream getLatestQuotas payload 1`] = `[]`;
+
+exports[`ecoflow-cmd Node should convert PowerStream setAcWatts payload 1`] = `[]`;

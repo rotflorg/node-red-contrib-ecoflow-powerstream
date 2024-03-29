@@ -1,18 +1,18 @@
 <script type="text/javascript">
-  RED.nodes.registerType('ecoflow-out', {
+  RED.nodes.registerType('ecoflow-cmd', {
     category: 'function',
     color: '#a6bbcf',
     defaults: {
       name: { value: '' },
       devicetype: { value: 'powerstream' },
-      userid: { value: 'app-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' },
-      devicesn: { value: 'HW51ZXXXXXXXXXXX' },
+      userid: { value: '' },
+      devicesn: { value: '' },
     },
     inputs: 1,
     outputs: 1,
     icon: "function.svg",
     label: function() {
-      return this.name || 'ecoflow-out';
+      return this.name || 'ecoflow-cmd';
     },
     oneditprepare: function() {
       $("#node-input-devicetype").typedInput({
@@ -29,7 +29,7 @@
   });
 </script>
 
-<script type="text/html" data-template-name="ecoflow-out">
+<script type="text/html" data-template-name="ecoflow-cmd">
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
     <input type="text" id="node-input-name" placeholder="Name">
@@ -39,16 +39,12 @@
     <input type="text" id="node-input-devicetype">
   </div>
   <div class="form-row">
-    <label for="node-input-userid"><i class="fa fa-user"></i> User ID</label>
-    <input type="text" id="node-input-userid" placeholder="app-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX">
-  </div>
-  <div class="form-row">
-    <label for="node-input-devicesn"><i class="fa fa-barcode"></i> Serial Number</label>
-    <input type="text" id="node-input-devicesn" placeholder="HW51ZXXXXXXXXXXX">
+    <label for="node-input-userid"><i class="fa fa-user"></i> Numerical User ID</label>
+    <input type="text" id="node-input-userid" placeholder="1000000000000000000">
   </div>
 </script>
 
-<script type="text/html" data-help-name="ecoflow-out">
+<script type="text/html" data-help-name="ecoflow-cmd">
   <p>This node converts the JSON messages to Ecoflow /app/USERID/SN/thing/property/set messages payloads in binary MQTT output binary format.</p>
   <p>Currently, only Ping and SetAC messages are supported.</p>
 </script>
