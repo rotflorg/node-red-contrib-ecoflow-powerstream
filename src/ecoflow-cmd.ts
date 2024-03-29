@@ -1,6 +1,7 @@
 import { Node, NodeInitializer, NodeMessage } from 'node-red';
-import { encodeSetMessage, parseProtocol } from './decoder';
-import { Buffer, IParserResult } from 'protobufjs';
+import { parseProtocol } from './protocol';
+import { IParserResult } from 'protobufjs';
+import { encodeSetMessage } from './encoder';
 
 
 
@@ -98,7 +99,7 @@ const nodeInit: NodeInitializer = (RED): void => {
     RED.nodes.createNode(node, config);
     const devicetype = String(config?.devicetype || 'powerstream') as DeviceType;
     node.on('input', (msg) => {
-      if (typeof config?.userid !== 'string') {
+      if ((typeof config?.userid !== 'string') || !config.userid) {
         node.status({ fill: 'red', shape: 'dot', text: 'User ID not configured' });
         return;
       }

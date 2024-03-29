@@ -1,6 +1,9 @@
 // Protocol definition taken from:
 // https://forum.iobroker.net/assets/uploads/files/1704442310021-ecoflow-connector_v121.txt
 
+import { IParserResult, parse } from 'protobufjs';
+
+
 export const PROTOCOL_SOURCE = `
 syntax = "proto3";
 message Message {
@@ -448,18 +451,6 @@ message SendMsgHart {
 }
 `;
 
-export interface IMessageInfo {
-  name: string;
-  key?: string;
-  ignore?: boolean;
-  cmdFunc?: number;
+export function parseProtocol(): IParserResult {
+  return parse(PROTOCOL_SOURCE);
 }
-
-export const POWERSTREAM_MESSAGES: {[cmdId: string]: IMessageInfo} = {
-  '1': { name: 'InverterHeartbeat', cmdFunc: 20 },
-  '4': { name: 'InverterHeartbeat2', cmdFunc: 20, },
-  '32': { name: 'PowerPack', cmdFunc: 254, ignore: true },
-  '134': { name: 'TimeTaskConfig', cmdFunc: 20, ignore: true },
-  '136': { name: 'PowerPack', cmdFunc: 20, ignore: true },
-  '138': { name: 'PowerPack', cmdFunc: 20, ignore: true },
-};

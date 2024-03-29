@@ -1,7 +1,8 @@
 import { Node, NodeInitializer, NodeMessage } from 'node-red';
-import { decodeEcoflowMessage, IEcoflowMessage, parseProtocol } from './decoder';
+import { decodeEcoflowMessage, IEcoflowMessage } from './decoder';
 import { DELTA2MAX_CONFIG, IJoinedStateConfig, JoinedState, POWERSTREAM_CONFIG, TimedOutListener } from './state';
 import { IParserResult } from 'protobufjs';
+import { parseProtocol } from './protocol';
 
 
 

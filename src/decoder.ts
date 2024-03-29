@@ -1,6 +1,21 @@
-import { IParserResult, parse } from 'protobufjs';
-import { IMessageInfo, POWERSTREAM_MESSAGES, PROTOCOL_SOURCE } from './protocol';
+import { IParserResult } from 'protobufjs';
 
+
+export interface IMessageInfo {
+  name: string;
+  key?: string;
+  ignore?: boolean;
+  cmdFunc?: number;
+}
+
+export const POWERSTREAM_MESSAGES: {[cmdId: string]: IMessageInfo} = {
+  '1': { name: 'InverterHeartbeat', cmdFunc: 20 },
+  '4': { name: 'InverterHeartbeat2', cmdFunc: 20, },
+  '32': { name: 'PowerPack', cmdFunc: 254, ignore: true },
+  '134': { name: 'TimeTaskConfig', cmdFunc: 20, ignore: true },
+  '136': { name: 'PowerPack', cmdFunc: 20, ignore: true },
+  '138': { name: 'PowerPack', cmdFunc: 20, ignore: true },
+};
 
 export class ParseError extends Error {
   constructor(public errorMessage: string, public msgobj: any) {
@@ -19,10 +34,6 @@ export interface IEcoflowMessage {
   data: any;
 }
 
-
-export function parseProtocol(): IParserResult {
-  return parse(PROTOCOL_SOURCE);
-}
 
 function decodeMessageInternal(parser: IParserResult, name: string, buffer: Uint8Array): any {
   const messageType = parser.root.lookupType(name);
@@ -59,56 +70,4 @@ export function decodeEcoflowMessage(parser: IParserResult, buffer: Uint8Array):
     });
   }
   return ret;
-}
-
-export interface ISendMessage {
-  pdata?: {
-    value?: number;
-  };
-  src: number;
-  dest: number;
-  dSrc?: number;
-  dDest?: number;
-  encType?: number;
-  checkType?: number;
-  cmdFunc?: number;
-  cmdId?: number;
-  dataLen?: number;
-  needAck?: number;
-  isAck?: number;
-  seq?: number;
-  productId?: number;
-  version?: number;
-  payloadVer?: number;
-  timeSnap?: number;
-  isRwCmd?: number;
-  isQueue?: number;
-  ackType?: number;
-  code?: string;
-  from?: string;
-  moduleSn?: string;
-  deviceSn?: string;
-}
-
-export function encodeSetMessage(parser: IParserResult, msg: ISendMessage): Uint8Array {
-  if (msg.pdata) {
-    if (msg.pdata.value===0) {
-      delete msg.pdata.value;
-    }
-    let value = msg.pdata.value || 0;
-    msg.dataLen = 2;
-    while (value>=128) {
-      msg.dataLen++;
-      value >>= 7;
-    }
-  }
-  if (!msg.seq) {
-    msg.seq = Math.floor(Date.now() / 1000);
-  }
-  if (!msg.from) {
-    msg.from = 'ios';
-  }
-  const setMessageType = parser.root.lookupType('SetMessage');
-  const setMessage = setMessageType.create({ header: msg });
-  return setMessageType.encode(setMessage).finish();
 }
