@@ -31,6 +31,9 @@ export interface IFieldState {
 function formatDigit(input: number): number {
   return input / 10;
 }
+function formatCents(input: number): number {
+  return input / 100;
+}
 function formatMillis(input: number): number {
   return input / 1000;
 }
@@ -43,8 +46,8 @@ export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
     { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
     { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
     { name: 'pv2InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
-    { name: 'pv1OpVolt', outputName: 'pv1InputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 30000 },
-    { name: 'pv2OpVolt', outputName: 'pv2InputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 30000 },
+    { name: 'pv1OpVolt', outputName: 'pv1InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 30000 },
+    { name: 'pv2OpVolt', outputName: 'pv2InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 30000 },
   ],
   compute: [
     { name: 'pvInputWatts', computeFn: (payload: any): number => {

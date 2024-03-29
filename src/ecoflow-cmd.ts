@@ -1,7 +1,12 @@
 import { Node, NodeInitializer, NodeMessage } from 'node-red';
 import { parseProtocol } from './protocol';
 import { IParserResult } from 'protobufjs';
-import { encodeSetMessage } from './encoder';
+import {
+  encodePowerStreamGetLatestQuotas,
+  encodePowerStreamSetAcWatts,
+  encodePowerStreamSetPing,
+  encodePowerStreamSetPrioritizePowerStorage
+} from './encoder';
 
 
 
@@ -14,7 +19,7 @@ interface IConvertedMessage {
   method: 'get' | 'set';
 }
 
-function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, deviceSn: string): IConvertedMessage|string {
+function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, deviceSn: string): IConvertedMessage[]|string {
   if (!msg.payload || typeof msg.payload !== 'object') {
     return 'No JSON';
   }
@@ -34,56 +39,22 @@ function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, devi
     return 'Invalid value type';
   }
   switch (command) {
+    case 'heartbeat':
+      return [
+        { method: 'get', payload: encodePowerStreamGetLatestQuotas(parser) },
+        { method: 'set', payload: encodePowerStreamSetPing(parser, 17477, deviceSn) },
+      ];
     case 'getLatestQuotas':
-      return { method: 'get', payload: encodeSetMessage(parser, { src: 32, dest: 32 }) };
+      return [{ method: 'get', payload: encodePowerStreamGetLatestQuotas(parser) }];
     case 'setAcWatts':
       if (val<0 || val>800) {
         return `Invalid watts: ${val}`;
       }
-      return { method: 'set', payload: encodeSetMessage(parser, {
-          pdata: { value: Math.max(1, Math.round(val*10)) },
-          src: 32,
-          dest: 53,
-          dSrc: 1,
-          dDest: 1,
-          checkType: 3,
-          cmdFunc: 20,
-          cmdId: 129,
-          needAck: 1,
-          version: 19,
-          payloadVer: 1,
-          deviceSn,
-        }) };
+      return [{ method: 'set', payload: encodePowerStreamSetAcWatts(parser, val, deviceSn) }];
     case 'setPrioritizePowerStorage':
-      return { method: 'set', payload: encodeSetMessage(parser, {
-          pdata: { value: val ? 1 : 0 },
-          src: 32,
-          dest: 53,
-          dSrc: 1,
-          dDest: 1,
-          checkType: 3,
-          cmdFunc: 20,
-          cmdId: 130,
-          needAck: 1,
-          version: 19,
-          payloadVer: 1,
-          deviceSn,
-        }) };
+      return [{ method: 'set', payload: encodePowerStreamSetPrioritizePowerStorage(parser, Boolean(val), deviceSn) }];
     case 'ping':
-      return { method: 'set', payload: encodeSetMessage(parser, {
-          pdata: { value: Math.round(val)%65536 },
-          src: 32,
-          dest: 53,
-          dSrc: 1,
-          dDest: 1,
-          checkType: 3,
-          cmdFunc: 32,
-          cmdId: 11,
-          needAck: 1,
-          version: 19,
-          payloadVer: 1,
-          deviceSn,
-        }) };
+      return [{ method: 'set', payload: encodePowerStreamSetPing(parser, Math.round(val)%65536, deviceSn) }];
   }
   return `Unknown command ${command}`;
 }
@@ -103,7 +74,7 @@ const nodeInit: NodeInitializer = (RED): void => {
         node.status({ fill: 'red', shape: 'dot', text: 'User ID not configured' });
         return;
       }
-      let converted: IConvertedMessage | string | undefined;
+      let converted: IConvertedMessage[] | string | undefined;
       const deviceSn = (msg.payload as any)?.deviceSn;
       if (typeof deviceSn !== 'string') {
         node.status({ fill: 'red', shape: 'dot', text: 'Missing deviceSn in message' });
@@ -120,11 +91,13 @@ const nodeInit: NodeInitializer = (RED): void => {
         node.status({ fill: 'red', shape: 'dot', text: `Invalid message: ${converted}` });
         return;
       }
-      const sendmsg: NodeMessage = {
-        topic: `/app/${config.userid}/${deviceSn}/thing/property/${converted.method}`,
-        payload: converted.payload,
+      for (const convMsg of converted) {
+        const sendmsg: NodeMessage = {
+          topic: `/app/${config.userid}/${deviceSn}/thing/property/${convMsg.method}`,
+          payload: convMsg.payload,
+        }
+        node.send(sendmsg);
       }
-      node.send(sendmsg);
       node.status({ fill: 'green', shape: 'dot', text: 'Valid data received' });
     });
     node.on('close', (done: any) => {

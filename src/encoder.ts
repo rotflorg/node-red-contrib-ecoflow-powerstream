@@ -46,3 +46,58 @@ export function encodeSetMessage(parser: IParserResult, msg: ISendMessage): Buff
   const setMessage = setMessageType.create({ header: msg });
   return Buffer.from(setMessageType.encode(setMessage).finish());
 }
+
+export function encodePowerStreamGetLatestQuotas(parser: IParserResult): Buffer {
+  return encodeSetMessage(parser, { src: 32, dest: 32 });
+}
+
+export function encodePowerStreamSetPing(parser: IParserResult, value: number, deviceSn: string): Buffer {
+  return encodeSetMessage(parser, {
+    pdata: { value },
+    src: 32,
+    dest: 53,
+    dSrc: 1,
+    dDest: 1,
+    checkType: 3,
+    cmdFunc: 32,
+    cmdId: 11,
+    needAck: 1,
+    version: 19,
+    payloadVer: 1,
+    deviceSn,
+  });
+}
+
+export function encodePowerStreamSetPrioritizePowerStorage(parser: IParserResult, value: boolean, deviceSn: string): Buffer {
+  return encodeSetMessage(parser, {
+    pdata: { value: value ? 1 : 0 },
+    src: 32,
+    dest: 53,
+    dSrc: 1,
+    dDest: 1,
+    checkType: 3,
+    cmdFunc: 20,
+    cmdId: 130,
+    needAck: 1,
+    version: 19,
+    payloadVer: 1,
+    deviceSn,
+  });
+}
+
+export function encodePowerStreamSetAcWatts(parser: IParserResult, watts: number, deviceSn: string): Buffer {
+  return encodeSetMessage(parser, {
+    pdata: { value: Math.max(1, Math.round(watts*10)) },
+    src: 32,
+    dest: 53,
+    dSrc: 1,
+    dDest: 1,
+    checkType: 3,
+    cmdFunc: 20,
+    cmdId: 129,
+    needAck: 1,
+    version: 19,
+    payloadVer: 1,
+    deviceSn,
+  });
+}
