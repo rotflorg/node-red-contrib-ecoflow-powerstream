@@ -7,6 +7,7 @@ export interface IFieldConfigValue {
   outputName?: string;
   undefValue: number;
   timeoutMs: number;
+  heartbeatTimeoutMs?: number;
   formatFn?: (input: number) => number;
   required?: boolean;
 }
@@ -41,7 +42,7 @@ function formatMillis(input: number): number {
 export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
   values: [
     { name: 'batInputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
-    { name: 'batSoc', undefValue: 0, timeoutMs: 600000 },
+    { name: 'batSoc', undefValue: 0, timeoutMs: 3600000, heartbeatTimeoutMs: 60000 },
     { name: 'batInputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
     { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
     { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
@@ -85,6 +86,7 @@ export class JoinedState {
   private deviceSn: string = '';
   private topic: string = '';
   private ready: boolean = false;
+  private lastHeartbeat: number = 0;
   private timer: NodeJS.Timeout|undefined;
   private isShutdown: boolean = false;
   public constructor(private readonly jjconfig: IJoinedStateConfig, private readonly timedOutListener?: TimedOutListener) {
@@ -97,6 +99,7 @@ export class JoinedState {
     if (this.isShutdown) {
       this.reset();
     }
+    const now = (new Date()).getTime();
     let changed = false;
     if (!this.topic) {
       this.topic = topic;
@@ -114,8 +117,9 @@ export class JoinedState {
       if (!state) {
         continue;
       }
+      this.lastHeartbeat = now;
       state.value = msg.data[key];
-      state.lastupMs = (new Date()).getTime();
+      state.lastupMs = now;
       state.available = true;
       if (state.config.required) {
         changed = true;
@@ -177,7 +181,7 @@ export class JoinedState {
         } else {
           ready = false;
         }
-      } else if (val.lastupMs && val.lastupMs+val.config.timeoutMs < now) {
+      } else if (val.lastupMs && (val.lastupMs+val.config.timeoutMs < now || (val.config.heartbeatTimeoutMs && this.lastHeartbeat+val.config.heartbeatTimeoutMs < now))) {
         val.lastupMs = 0;
         val.value = val.config.undefValue;
         changed = true;
