@@ -98,7 +98,9 @@ const nodeInit: NodeInitializer = (RED): void => {
         }
         node.send(sendmsg);
       }
-      node.status({ fill: 'green', shape: 'dot', text: 'Valid data received' });
+      if (converted.length) {
+        node.status({ fill: 'green', shape: 'dot', text: 'Valid data received' });
+      }
     });
     node.on('close', (done: any) => {
       done();

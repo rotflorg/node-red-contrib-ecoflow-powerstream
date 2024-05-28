@@ -110,11 +110,15 @@ const nodeInit: NodeInitializer = (RED): void => {
     RED.nodes.createNode(node, config);
     const outmsgtype = String(config?.outmsgtype || 'both') as OutputMessagesType;
     const devicetype = String(config?.devicetype || 'powerstream') as DeviceType;
-    const timedOutListener: TimedOutListener = (state) => {
-      if (outmsgtype !== 'translated') {
+    const setNodeStatus = (isTimeout: boolean) => {
+      node.status({fill: isTimeout ? 'red' : 'green', shape: 'dot', text: isTimeout ? 'Timed out' : 'Connected' });
+    }
+    node.status({fill: 'yellow', shape: 'dot', text: 'Waiting...' });
+    const timedOutListener: TimedOutListener = (state, isTimeout: boolean) => {
+      if (isTimeout && outmsgtype !== 'translated') {
         node.send(state.buildMessage());
       }
-      node.status({fill: 'red', shape: 'dot', text: 'Timed out'});
+      setNodeStatus(isTimeout);
     };
     const cfg: IJoinedStateConfig = devicetype === 'delta2max' ? DELTA2MAX_CONFIG : POWERSTREAM_CONFIG;
     const state = new JoinedState(cfg, timedOutListener);
@@ -133,7 +137,7 @@ const nodeInit: NodeInitializer = (RED): void => {
         if (outmsgtype !== 'translated') {
           node.send(joinedMessage);
         }
-        node.status({ fill: 'green', shape: 'dot', text: 'Connected' });
+        setNodeStatus(state.countTimedOutFields() > 0);
       }
     });
     node.on('close', (done: any) => {

@@ -7,7 +7,6 @@ export interface IFieldConfigValue {
   outputName?: string;
   undefValue: number;
   timeoutMs: number;
-  heartbeatTimeoutMs?: number;
   formatFn?: (input: number) => number;
   required?: boolean;
 }
@@ -18,6 +17,7 @@ export interface IFieldConfigCompute {
 }
 
 export interface IJoinedStateConfig {
+  mainTimeoutMs: number;
   values: IFieldConfigValue[];
   compute: IFieldConfigCompute[];
 }
@@ -25,6 +25,7 @@ export interface IJoinedStateConfig {
 export interface IFieldState {
   lastupMs: number;
   available: boolean;
+  timeout: boolean;
   value: number;
   config: IFieldConfigValue;
 }
@@ -40,15 +41,16 @@ function formatMillis(input: number): number {
 }
 
 export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
+  mainTimeoutMs: 120000,
   values: [
-    { name: 'batInputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
-    { name: 'batSoc', undefValue: 0, timeoutMs: 3600000, heartbeatTimeoutMs: 60000 },
-    { name: 'batInputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
-    { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
-    { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
-    { name: 'pv2InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 60000, required: true },
-    { name: 'pv1OpVolt', outputName: 'pv1InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 30000 },
-    { name: 'pv2OpVolt', outputName: 'pv2InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 30000 },
+    { name: 'batInputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 14400000, required: true },
+    { name: 'batSoc', undefValue: 0, timeoutMs: 5400000 },
+    { name: 'batInputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 900000, required: true },
+    { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 600000, required: true },
+    { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000, required: true },
+    { name: 'pv2InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000, required: true },
+    { name: 'pv1OpVolt', outputName: 'pv1InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 300000 },
+    { name: 'pv2OpVolt', outputName: 'pv2InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 300000 },
   ],
   compute: [
     { name: 'pvInputWatts', computeFn: (payload: any): number => {
@@ -58,14 +60,15 @@ export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
 };
 
 export const DELTA2MAX_CONFIG: IJoinedStateConfig = {
+  mainTimeoutMs: 120000,
   values: [
-    { name: 'bms_emsStatus_f32LcdShowSoc', undefValue: 0, timeoutMs: 60000, required: true },
-    { name: 'bms_bmsStatus_f32ShowSoc', undefValue: 0, timeoutMs: 60000, required: true },
-    { name: 'bms_bmsStatus_vol', undefValue: 0, formatFn: formatMillis, timeoutMs: 60000 },
-    { name: 'bms_kitInfo_watts0', undefValue: 0, timeoutMs: 60000 },
-    { name: 'bms_kitInfo_watts1', undefValue: 0, timeoutMs: 60000 },
-    { name: 'mppt_inWatts', undefValue: 0, timeoutMs: 60000 },
-    { name: 'mppt_pv2InWatts', undefValue: 0, timeoutMs: 60000 },
+    { name: 'bms_emsStatus_f32LcdShowSoc', undefValue: 0, timeoutMs: 14400000, required: true },
+    { name: 'bms_bmsStatus_f32ShowSoc', undefValue: 0, timeoutMs: 14400000, required: true },
+    { name: 'bms_bmsStatus_vol', undefValue: 0, formatFn: formatMillis, timeoutMs: 14400000 },
+    { name: 'bms_kitInfo_watts0', undefValue: 0, timeoutMs: 600000 },
+    { name: 'bms_kitInfo_watts1', undefValue: 0, timeoutMs: 600000 },
+    { name: 'mppt_inWatts', undefValue: 0, timeoutMs: 900000 },
+    { name: 'mppt_pv2InWatts', undefValue: 0, timeoutMs: 900000 },
     { name: 'inv_inputWatts', undefValue: 0, timeoutMs: 60000 },
     { name: 'inv_outputWatts', undefValue: 0, timeoutMs: 60000 },
   ],
@@ -78,7 +81,7 @@ export const DELTA2MAX_CONFIG: IJoinedStateConfig = {
 
 
 
-export type TimedOutListener = (state: JoinedState) => void;
+export type TimedOutListener = (state: JoinedState, isTimeout: boolean) => void;
 
 export class JoinedState {
   private readonly fields: {[name: string]: IFieldState} = { };
@@ -120,6 +123,7 @@ export class JoinedState {
       this.lastHeartbeat = now;
       state.value = msg.data[key];
       state.lastupMs = now;
+      state.timeout = false;
       state.available = true;
       if (state.config.required) {
         changed = true;
@@ -159,6 +163,15 @@ export class JoinedState {
       this.timer = undefined;
     }
   }
+  public countTimedOutFields(): number {
+    let ret = 0;
+    for (const val of Object.values(this.fields)) {
+      if (val.timeout) {
+        ret++;
+      }
+    }
+    return ret;
+  }
   private reset(): void {
     this.createTimeMs = new Date().getTime();
     this.deviceSn = '';
@@ -166,7 +179,7 @@ export class JoinedState {
     this.ready = false;
     this.isShutdown = false;
     for (const config of this.jjconfig.values) {
-      this.fields[config.name] = { lastupMs: 0, available: false, value: config.undefValue, config };
+      this.fields[config.name] = { lastupMs: 0, available: false, timeout: false, value: config.undefValue, config };
     }
   }
   private checkReady(): boolean {
@@ -181,8 +194,9 @@ export class JoinedState {
         } else {
           ready = false;
         }
-      } else if (val.lastupMs && (val.lastupMs+val.config.timeoutMs < now || (val.config.heartbeatTimeoutMs && this.lastHeartbeat+val.config.heartbeatTimeoutMs < now))) {
+      } else if (val.lastupMs && (val.lastupMs+val.config.timeoutMs < now || (this.lastHeartbeat+this.jjconfig.mainTimeoutMs < now))) {
         val.lastupMs = 0;
+        val.timeout = true;
         val.value = val.config.undefValue;
         changed = true;
       }
@@ -194,6 +208,7 @@ export class JoinedState {
     if (this.timer || this.isShutdown) {
       return;
     }
+    let lastTimeout = 0;
     const timer = setInterval(() => {
       if (this.isShutdown) {
         clearInterval(timer);
@@ -206,7 +221,11 @@ export class JoinedState {
         return;
       }
       if (this.ready) {
-        this.timedOutListener?.(this);
+        const newTimeout = this.countTimedOutFields();
+        if (lastTimeout !== newTimeout) {
+          lastTimeout = newTimeout;
+          this.timedOutListener?.(this, newTimeout > 0);
+        }
       }
     }, 5000);
     this.timer = timer;
