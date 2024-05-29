@@ -113,7 +113,7 @@ const nodeInit: NodeInitializer = (RED): void => {
     const setNodeStatus = (isTimeout: boolean) => {
       node.status({fill: isTimeout ? 'red' : 'green', shape: 'dot', text: isTimeout ? 'Timed out' : 'Connected' });
     }
-    node.status({fill: 'yellow', shape: 'dot', text: 'Waiting...' });
+    node.status({fill: 'yellow', shape: 'dot', text: 'Waiting for complete data set...' });
     const timedOutListener: TimedOutListener = (state, isTimeout: boolean) => {
       if (isTimeout && outmsgtype !== 'translated') {
         node.send(state.buildMessage());

@@ -158,3 +158,16 @@ The following commands exist:
   network up to the limit configured by setAcWatts, the superfluous power is
   used to charge the battery.
 * ping: Send a Ping command.
+
+### Sample message
+
+The following input message (fed into ecoflow-cmd node) will generate a binary message
+that sets the egress power to 200 watts (when piped into the MQTT output node configured
+as described above):
+```
+{
+  "topic": "/not/relevant/",
+  "payload": { "command": "setAcWatts", "value": 200, "deviceSn": "HW51ZXXXXXXXXXXX" }
+}
+```
+

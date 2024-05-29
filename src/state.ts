@@ -43,12 +43,12 @@ function formatMillis(input: number): number {
 export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
   mainTimeoutMs: 120000,
   values: [
-    { name: 'batInputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 14400000, required: true },
-    { name: 'batSoc', undefValue: 0, timeoutMs: 5400000 },
-    { name: 'batInputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 900000, required: true },
-    { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 600000, required: true },
-    { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000, required: true },
-    { name: 'pv2InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000, required: true },
+    { name: 'batInputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 900000 },
+    { name: 'batSoc', undefValue: 0, timeoutMs: 5400000, required: true },
+    { name: 'batInputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 900000 },
+    { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 600000 },
+    { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000 },
+    { name: 'pv2InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000 },
     { name: 'pv1OpVolt', outputName: 'pv1InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 300000 },
     { name: 'pv2OpVolt', outputName: 'pv2InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 300000 },
   ],
@@ -146,7 +146,7 @@ export class JoinedState {
       if (!val.available) {
         continue;
       }
-      payload[val.config.name] = val.config.formatFn ? val.config.formatFn(val.value) : val.value;
+      payload[val.config.outputName ?? val.config.name] = val.config.formatFn ? val.config.formatFn(val.value) : val.value;
     }
     for (const config of this.jjconfig.compute) {
       payload[config.name] = config.computeFn(payload);
@@ -166,7 +166,7 @@ export class JoinedState {
   public countTimedOutFields(): number {
     let ret = 0;
     for (const val of Object.values(this.fields)) {
-      if (val.timeout) {
+      if (val.timeout && val.config.required) {
         ret++;
       }
     }
@@ -188,7 +188,7 @@ export class JoinedState {
     const now = new Date().getTime();
     for (const val of Object.values(this.fields)) {
       if (!val.available && val.config.required) {
-        if (this.createTimeMs+val.config.timeoutMs < now) {
+        if (this.createTimeMs+this.jjconfig.mainTimeoutMs < now) {
           val.available = true;
           changed = true;
         } else {
