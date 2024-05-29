@@ -137,7 +137,7 @@ const nodeInit: NodeInitializer = (RED): void => {
         if (outmsgtype !== 'translated') {
           node.send(joinedMessage);
         }
-        setNodeStatus(state.countTimedOutFields() > 0);
+        setNodeStatus(Boolean(state.getTimedOutFields()));
       }
     });
     node.on('close', (done: any) => {

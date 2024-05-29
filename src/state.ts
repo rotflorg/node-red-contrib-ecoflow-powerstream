@@ -163,11 +163,12 @@ export class JoinedState {
       this.timer = undefined;
     }
   }
-  public countTimedOutFields(): number {
-    let ret = 0;
+  public getTimedOutFields(): string {
+    let ret = '';
     for (const val of Object.values(this.fields)) {
       if (val.timeout && val.config.required) {
-        ret++;
+        const name = val.config.name;
+        ret = ret ? `${ret},${name}` : name;
       }
     }
     return ret;
@@ -208,7 +209,7 @@ export class JoinedState {
     if (this.timer || this.isShutdown) {
       return;
     }
-    let lastTimeout = 0;
+    let lastTimeout = '';
     const timer = setInterval(() => {
       if (this.isShutdown) {
         clearInterval(timer);
@@ -221,10 +222,10 @@ export class JoinedState {
         return;
       }
       if (this.ready) {
-        const newTimeout = this.countTimedOutFields();
+        const newTimeout = this.getTimedOutFields();
         if (lastTimeout !== newTimeout) {
           lastTimeout = newTimeout;
-          this.timedOutListener?.(this, newTimeout > 0);
+          this.timedOutListener?.(this, Boolean(newTimeout));
         }
       }
     }, 5000);
