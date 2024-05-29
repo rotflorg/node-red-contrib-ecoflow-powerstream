@@ -116,11 +116,11 @@ export class JoinedState {
       }
     }
     for (const key of Object.keys(msg.data)) {
+      this.lastHeartbeat = now;
       const state = this.fields[key];
       if (!state) {
         continue;
       }
-      this.lastHeartbeat = now;
       state.value = msg.data[key];
       state.lastupMs = now;
       state.timeout = false;
