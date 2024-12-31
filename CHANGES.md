@@ -1,5 +1,8 @@
 # Changes / release notes
 
+## v0.7.0 (2024-12-31)
+* Added support for timeout factor
+
 ## v0.6.1 (2024-05-29)
 * Fix for v0.6.0 waiting for 4 hours before working correctly
 * Fixed broken state display in v0.6.0

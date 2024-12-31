@@ -6,6 +6,7 @@
       name: { value: '' },
       devicetype: { value: 'powerstream' },
       outmsgtype: { value: 'both' },
+      timeoutfactor: { value: 0 },
     },
     inputs: 1,
     outputs: 1,
@@ -37,6 +38,9 @@
           }
         ]
       });
+      $("#node-input-timeoutfactor").typedInput({
+        types: ["num"]
+      });
     }
   });
 </script>
@@ -53,6 +57,10 @@
   <div class="form-row">
     <label for="node-input-outmsgtype">Output message types</label>
     <input type="text" id="node-input-outmsgtype">
+  </div>
+  <div class="form-row">
+    <label for="node-input-timeoutfactor">Timeout factor</label>
+    <input type="text" id="node-input-timeoutfactor">
   </div>
 </script>
 

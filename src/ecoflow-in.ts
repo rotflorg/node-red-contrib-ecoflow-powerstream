@@ -110,6 +110,7 @@ const nodeInit: NodeInitializer = (RED): void => {
     RED.nodes.createNode(node, config);
     const outmsgtype = String(config?.outmsgtype || 'both') as OutputMessagesType;
     const devicetype = String(config?.devicetype || 'powerstream') as DeviceType;
+    const timeoutFactor = Number(config?.timeoutfactor) || 1;
     const setNodeStatus = (isTimeout: boolean) => {
       node.status({fill: isTimeout ? 'red' : 'green', shape: 'dot', text: isTimeout ? 'Timed out' : 'Connected' });
     }
@@ -121,7 +122,7 @@ const nodeInit: NodeInitializer = (RED): void => {
       setNodeStatus(isTimeout);
     };
     const cfg: IJoinedStateConfig = devicetype === 'delta2max' ? DELTA2MAX_CONFIG : POWERSTREAM_CONFIG;
-    const state = new JoinedState(cfg, timedOutListener);
+    const state = new JoinedState(cfg, timeoutFactor, timedOutListener);
     node.on('input', (msg) => {
       let sendJoined: boolean;
       if (devicetype === 'delta2max') {

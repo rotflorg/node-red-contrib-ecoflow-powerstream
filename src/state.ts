@@ -41,7 +41,7 @@ function formatMillis(input: number): number {
 }
 
 export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
-  mainTimeoutMs: 120000,
+  mainTimeoutMs: 240000,
   values: [
     { name: 'batInputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 900000 },
     { name: 'batSoc', undefValue: 0, timeoutMs: 5400000, required: true },
@@ -60,7 +60,7 @@ export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
 };
 
 export const DELTA2MAX_CONFIG: IJoinedStateConfig = {
-  mainTimeoutMs: 120000,
+  mainTimeoutMs: 240000,
   values: [
     { name: 'bms_emsStatus_f32LcdShowSoc', undefValue: 0, timeoutMs: 14400000, required: true },
     { name: 'bms_bmsStatus_f32ShowSoc', undefValue: 0, timeoutMs: 14400000, required: true },
@@ -92,9 +92,11 @@ export class JoinedState {
   private lastHeartbeat: number = 0;
   private timer: NodeJS.Timeout|undefined;
   private isShutdown: boolean = false;
-  public constructor(private readonly jjconfig: IJoinedStateConfig, private readonly timedOutListener?: TimedOutListener) {
+
+  public constructor(private readonly jjconfig: IJoinedStateConfig, private readonly timeoutFactor?: number, private readonly timedOutListener?: TimedOutListener) {
     this.reset();
   }
+
   public apply(topic: string, msg: IEcoflowMessage): boolean {
     if (!topic || !msg.deviceSn) {
       return false;
@@ -103,6 +105,7 @@ export class JoinedState {
       this.reset();
     }
     const now = (new Date()).getTime();
+    this.lastHeartbeat = now;
     let changed = false;
     if (!this.topic) {
       this.topic = topic;
@@ -116,7 +119,6 @@ export class JoinedState {
       }
     }
     for (const key of Object.keys(msg.data)) {
-      this.lastHeartbeat = now;
       const state = this.fields[key];
       if (!state) {
         continue;
@@ -187,15 +189,17 @@ export class JoinedState {
     let ready = Boolean(this.topic && this.deviceSn);
     let changed = false;
     const now = new Date().getTime();
+    const timeoutFactor = Math.max(0.5, (this.timeoutFactor || 1));
+    const mainTimeoutMs = this.jjconfig.mainTimeoutMs*timeoutFactor;
     for (const val of Object.values(this.fields)) {
       if (!val.available && val.config.required) {
-        if (this.createTimeMs+this.jjconfig.mainTimeoutMs < now) {
+        if (this.createTimeMs+mainTimeoutMs < now) {
           val.available = true;
           changed = true;
         } else {
           ready = false;
         }
-      } else if (val.lastupMs && (val.lastupMs+val.config.timeoutMs < now || (this.lastHeartbeat+this.jjconfig.mainTimeoutMs < now))) {
+      } else if (val.lastupMs && (val.lastupMs+(val.config.timeoutMs*timeoutFactor) < now || (this.lastHeartbeat+mainTimeoutMs < now))) {
         val.lastupMs = 0;
         val.timeout = true;
         val.value = val.config.undefValue;
