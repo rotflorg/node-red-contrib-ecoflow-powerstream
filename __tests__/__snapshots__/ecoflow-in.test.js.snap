@@ -402,6 +402,20 @@ exports[`ecoflow-in Node should convert PowerStream binary payload 1`] = `
   },
   {
     "payload": {
+      "batInputVolt": 53.7,
+      "deviceSn": "HW51ZEH000000000",
+      "gridWatt": 141.8,
+      "invOutputWatts": 142.5,
+      "pv1InputVolt": 34.58,
+      "pv1InputWatts": 48.5,
+      "pv2InputVolt": 33.91,
+      "pv2InputWatts": 198.5,
+      "pvInputWatts": 239.6,
+    },
+    "topic": "/ecoflow/powerstream/aggregated",
+  },
+  {
+    "payload": {
       "cmdFunc": 20,
       "cmdId": 1,
       "data": {
@@ -451,21 +465,6 @@ exports[`ecoflow-in Node should convert PowerStream binary payload 1`] = `
       "version": 3,
     },
     "topic": "/ecoflow/powerstream",
-  },
-  {
-    "payload": {
-      "batInputVolt": 53.7,
-      "batInputWatts": -92.4,
-      "batSoc": 62,
-      "deviceSn": "HW51ZEH000000000",
-      "invOutputWatts": 141.8,
-      "pv1InputVolt": 34.33,
-      "pv1InputWatts": 48.5,
-      "pv2InputVolt": 34.39,
-      "pv2InputWatts": 198.5,
-      "pvInputWatts": 239.6,
-    },
-    "topic": "/ecoflow/powerstream/aggregated",
   },
 ]
 `;

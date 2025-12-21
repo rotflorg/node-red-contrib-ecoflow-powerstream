@@ -171,3 +171,16 @@ as described above):
 }
 ```
 
+
+### Ping message
+
+The following ping message (fed into ecoflow-cmd node) will help keep your MQTT input
+connection alive. Use an inject node that regularly (e.g. every 60 seconds) sends the
+following payload to the MQTT output node configured as described above:
+```
+{
+  "topic": "/not/relevant/",
+  "payload": { "command": "ping", "value": 17477, "deviceSn": "HW51ZXXXXXXXXXXX" }
+}
+```
+

@@ -42,7 +42,7 @@ function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, devi
     case 'heartbeat':
       return [
         { method: 'get', payload: encodePowerStreamGetLatestQuotas(parser) },
-        { method: 'set', payload: encodePowerStreamSetPing(parser, 17477, deviceSn) },
+        { method: 'set', payload: encodePowerStreamSetPing(parser, Math.round(val)%65536, deviceSn) },
       ];
     case 'getLatestQuotas':
       return [{ method: 'get', payload: encodePowerStreamGetLatestQuotas(parser) }];

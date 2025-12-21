@@ -1,5 +1,8 @@
 # Changes / release notes
 
+## v0.7.1 (2025-12-21)
+* Do not require the batSoc state from the PowerStream inverter, as newer versions do not send this
+
 ## v0.7.0 (2024-12-31)
 * Added support for timeout factor
 

@@ -44,13 +44,16 @@ export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
   mainTimeoutMs: 240000,
   values: [
     { name: 'batInputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 900000 },
-    { name: 'batSoc', undefValue: 0, timeoutMs: 5400000, required: true },
+    { name: 'batSoc', undefValue: 0, timeoutMs: 5400000 },
     { name: 'batInputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 900000 },
     { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 600000 },
     { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000 },
     { name: 'pv2InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000 },
     { name: 'pv1OpVolt', outputName: 'pv1InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 300000 },
     { name: 'pv2OpVolt', outputName: 'pv2InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 300000 },
+    { name: 'supplyPriority', undefValue: 0, timeoutMs: 900000 },
+    { name: 'invStatus', undefValue: 0, timeoutMs: 900000 },
+    { name: 'gridWatt_45', undefValue: 0, formatFn: formatDigit, timeoutMs: 900000, outputName: 'gridWatt' },
   ],
   compute: [
     { name: 'pvInputWatts', computeFn: (payload: any): number => {
