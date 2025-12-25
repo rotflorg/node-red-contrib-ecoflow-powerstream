@@ -9,6 +9,7 @@ export interface IFieldConfigValue {
   timeoutMs: number;
   formatFn?: (input: number) => number;
   required?: boolean;
+  initChange?: boolean;
 }
 
 export interface IFieldConfigCompute {
@@ -44,11 +45,11 @@ export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
   mainTimeoutMs: 240000,
   values: [
     { name: 'batInputVolt', undefValue: 0, formatFn: formatDigit, timeoutMs: 900000 },
-    { name: 'batSoc', undefValue: 0, timeoutMs: 5400000 },
+    { name: 'batSoc', undefValue: 0, timeoutMs: 5400000, initChange: true },
     { name: 'batInputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 900000 },
-    { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 600000 },
-    { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000 },
-    { name: 'pv2InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000 },
+    { name: 'invOutputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 600000, initChange: true },
+    { name: 'pv1InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000, initChange: true },
+    { name: 'pv2InputWatts', undefValue: 0, formatFn: formatDigit, timeoutMs: 300000, initChange: true },
     { name: 'pv1OpVolt', outputName: 'pv1InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 300000 },
     { name: 'pv2OpVolt', outputName: 'pv2InputVolt', undefValue: 0, formatFn: formatCents, timeoutMs: 300000 },
     { name: 'supplyPriority', undefValue: 0, timeoutMs: 900000 },
@@ -126,11 +127,12 @@ export class JoinedState {
       if (!state) {
         continue;
       }
+      const valueChanged = state.value !== msg.data[key];
       state.value = msg.data[key];
       state.lastupMs = now;
       state.timeout = false;
       state.available = true;
-      if (state.config.required) {
+      if (state.config.required || (state.config.initChange && valueChanged)) {
         changed = true;
       }
     }

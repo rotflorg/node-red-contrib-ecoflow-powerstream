@@ -1,5 +1,8 @@
 # Changes / release notes
 
+## v0.7.2 (2025-12-25)
+* Fix for release 0.7.1 where PowerStream aggregated messages were not sent in some cases.
+
 ## v0.7.1 (2025-12-21)
 * Do not require the batSoc state from the PowerStream inverter, as newer versions do not send this
 
