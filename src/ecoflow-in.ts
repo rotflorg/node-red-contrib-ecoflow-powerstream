@@ -35,9 +35,13 @@ function convertDeltaJsonData(params: any): any {
     key = key.replace(/\./g, '_');
     if (key === 'bms_kitInfo_watts' && Array.isArray(val)) {
       for (let i=0; i<val.length; i++) {
-        const v = val[i]?.curPower;
+        let v = val[i]?.curPower;
         if (typeof v === 'number') {
           ret[`${key}${i}`] = v;
+        }
+        v = val[i]?.f32Soc;
+        if (typeof v === 'number') {
+          ret[`${key.replace('_watts', '_soc')}${i}`] = v;
         }
       }
       continue;

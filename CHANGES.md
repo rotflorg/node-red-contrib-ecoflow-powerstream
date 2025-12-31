@@ -1,5 +1,9 @@
 # Changes / release notes
 
+## v0.7.3 (2025-12-31)
+* New Delta2Max aggregated vars: bms_soc, bms_emsStatus_maxChargeSoc, bms_emsStatus_minDsgSoc, bms_bmsInfo_bsmCycles, bms_bmsInfo_soh, bms_kitInfo_soc0, bms_kitInfo_soc1, pd_XT150Watts1, pd_wattsOutSum
+* Another fix for release 0.7.1/0.7.2 where PowerStream aggregated messages were not sent in some cases.
+
 ## v0.7.2 (2025-12-25)
 * Fix for release 0.7.1 where PowerStream aggregated messages were not sent in some cases.
 

@@ -67,19 +67,51 @@ export const DELTA2MAX_CONFIG: IJoinedStateConfig = {
   mainTimeoutMs: 240000,
   values: [
     { name: 'bms_emsStatus_f32LcdShowSoc', undefValue: 0, timeoutMs: 14400000, required: true },
-    { name: 'bms_bmsStatus_f32ShowSoc', undefValue: 0, timeoutMs: 14400000, required: true },
+    { name: 'bms_emsStatus_maxChargeSoc', undefValue: 0, timeoutMs: 14400000 },
+    { name: 'bms_emsStatus_minDsgSoc', undefValue: 0, timeoutMs: 14400000 },
+    { name: 'bms_bmsStatus_f32ShowSoc', undefValue: 0, timeoutMs: 14400000 },
     { name: 'bms_bmsStatus_vol', undefValue: 0, formatFn: formatMillis, timeoutMs: 14400000 },
+    { name: 'bms_slave_bmsSlaveStatus_1_f32ShowSoc', undefValue: 0, timeoutMs: 14400000 },
+    { name: 'bms_slave_bmsSlaveStatus_1_vol', undefValue: 0, formatFn: formatMillis, timeoutMs: 14400000 },
+    { name: 'bms_slave_bmsSlaveStatus_2_f32ShowSoc', undefValue: 0, timeoutMs: 14400000 },
+    { name: 'bms_slave_bmsSlaveStatus_2_vol', undefValue: 0, formatFn: formatMillis, timeoutMs: 14400000 },
+    { name: 'bms_bmsInfo_bsmCycles', undefValue: 0, timeoutMs: 14400000 },
+    { name: 'bms_bmsInfo_soh', undefValue: 0, timeoutMs: 14400000 },
     { name: 'bms_kitInfo_watts0', undefValue: 0, timeoutMs: 600000 },
     { name: 'bms_kitInfo_watts1', undefValue: 0, timeoutMs: 600000 },
+    { name: 'bms_kitInfo_soc0', undefValue: 0, timeoutMs: 600000 },
+    { name: 'bms_kitInfo_soc1', undefValue: 0, timeoutMs: 600000 },
     { name: 'mppt_inWatts', undefValue: 0, timeoutMs: 900000 },
     { name: 'mppt_pv2InWatts', undefValue: 0, timeoutMs: 900000 },
-    { name: 'inv_inputWatts', undefValue: 0, timeoutMs: 60000 },
-    { name: 'inv_outputWatts', undefValue: 0, timeoutMs: 60000 },
+    { name: 'inv_inputWatts', undefValue: 0, timeoutMs: 600000 },
+    { name: 'inv_outputWatts', undefValue: 0, timeoutMs: 600000 },
+    { name: 'pd_XT150Watts1', undefValue: 0, timeoutMs: 600000 },
+    { name: 'pd_wattsOutSum', undefValue: 0, timeoutMs: 600000 },
   ],
   compute: [
     { name: 'mppt_pvInputWatts', computeFn: (payload: any): number => {
         return Math.floor(((payload.mppt_inWatts || 0) + (payload.mppt_pv2InWatts || 0)));
-      }}
+      }},
+    { name: 'bms_soc', computeFn: (payload: any): number => {
+        let val = payload.bms_emsStatus_f32LcdShowSoc;
+        if (val && (typeof val === 'number')) {
+          return val;
+        }
+        val = 0;
+        let count = 0;
+        const vals = [
+          payload.bms_bmsStatus_f32ShowSoc,
+          payload.bms_slave_bmsSlaveStatus_1_f32ShowSoc,
+          payload.bms_slave_bmsSlaveStatus_2_f32ShowSoc
+        ];
+        for (const chk of vals) {
+          if (typeof chk === 'number') {
+            val += chk;
+            count++;
+          }
+        }
+        return Math.round(val * 10 / Math.max(1, count)) / 10;
+      }},
   ]
 };
 
@@ -127,7 +159,7 @@ export class JoinedState {
       if (!state) {
         continue;
       }
-      const valueChanged = state.value !== msg.data[key];
+      const valueChanged = state.value !== msg.data[key] || (!state.available|| state.timeout);
       state.value = msg.data[key];
       state.lastupMs = now;
       state.timeout = false;
