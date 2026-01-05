@@ -63,6 +63,8 @@ aggregated messages have a topic to which "/aggregated" is appended as suffix.
 
 #### Device type "Delta 2 Max"
 
+* bms_soc: Calculated value from multiple sources: Gives the most reliable source
+  for the "State of charge", the overall charging state of the system.
 * bms_emsStatus_f32LcdShowSoc: The overall charging state of the battery
   (average, if you have multiple batteries).
 * bms_bmsStatus_f32ShowSoc: The charging state of the power station internal battery.
@@ -70,14 +72,23 @@ aggregated messages have a topic to which "/aggregated" is appended as suffix.
   in volts.
 * bms_kitInfo_watts0: the power going out (positive value) or coming in (negative
   value) from the first battery connector (external battery, micro inverter, etc.)
+* bms_kitInfo_soc0: The Soc of the battery connected to the first battery connector
+  if available (external battery, micro inverter, etc.)
 * bms_kitInfo_watts1: the power going out (positive value) or coming in (negative
   value) from the second battery connector (external battery, micro inverter, etc.)
+* bms_kitInfo_soc1: The Soc of the battery connected to the second battery connector
+  if available (external battery, micro inverter, etc.)
 * mppt_inWatts: the power coming in from the PV solar panel in plug 1.
 * mppt_pv2InWatts: the power coming in from the PV solar panel in plug 2.
 * mppt_pvInputWatts: the combined power coming in from all PV solar panels attached
   directly to the power station.
 * inv_inputWatts: the power station internal inverter, input power.
 * inv_outputWatts: the power station internal inverter, output power.
+* bms_emsStatus_maxChargeSoc: The maximum Soc configured for the system.
+* bms_emsStatus_minDsgSoc: The minimum Soc configured for the system.
+* bms_bmsInfo_bsmCycles: Counts how many times was the battery recharged.
+* bms_bmsInfo_soh: The State of health, describes how healthy the battery is.
+* pd_wattsOutSum: Power delivery watts (to the devices attached directly to the device).
 
 ### Connect MQTT
 
@@ -180,7 +191,9 @@ following payload to the MQTT output node configured as described above:
 ```
 {
   "topic": "/not/relevant/",
-  "payload": { "command": "ping", "value": 17477, "deviceSn": "HW51ZXXXXXXXXXXX" }
+  "payload": { "command": "getLatestQuotas", "value": 0, "deviceSn": "HW51ZXXXXXXXXXXX" }
 }
 ```
+Note: this is only necessary if you use the Ecoflow app. If the Ecoflow app is not opened,
+the connection should stay alive anyway.
 
