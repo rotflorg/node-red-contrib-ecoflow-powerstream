@@ -1,5 +1,29 @@
 import { IParserResult } from 'protobufjs';
+import { JoinedState } from './state';
 
+export interface IStreamMessageProcessResult {
+  topic: string;
+  sendJoined: boolean;
+  processedMessages: any[];
+}
+
+export function processEcoflowStreamMessage(state: JoinedState, parser: IParserResult, topic: string|undefined, buffer: Uint8Array|undefined): IStreamMessageProcessResult {
+  const ret: IStreamMessageProcessResult = {
+    topic: topic || '/ecoflow/powerstream',
+    sendJoined: false,
+    processedMessages: [],
+  };
+  if (!buffer) {
+    return ret;
+  }
+  for (const payload of decodeEcoflowMessage(parser, buffer)) {
+    ret.processedMessages.push(payload);
+    if (state.apply(ret.topic, payload)) {
+      ret.sendJoined = true;
+    }
+  }
+  return ret;
+}
 
 export interface IMessageInfo {
   name: string;
@@ -10,7 +34,11 @@ export interface IMessageInfo {
 
 export const POWERSTREAM_MESSAGES: {[cmdId: string]: IMessageInfo} = {
   '1': { name: 'InverterHeartbeat', cmdFunc: 20 },
+  '2': { name: 'CMSHeartBeatReport', cmdFunc: 32 },
   '4': { name: 'InverterHeartbeat2', cmdFunc: 20, },
+  '21': { name: 'DisplayPropertyUpload', cmdFunc: 254 },
+  '22': { name: 'RuntimePropertyUpload', cmdFunc: 254 },
+  '50': { name: 'BMSHeartBeatReport', cmdFunc: 32 },
   '32': { name: 'PowerPack', cmdFunc: 254, ignore: true },
   '134': { name: 'TimeTaskConfig', cmdFunc: 20, ignore: true },
   '136': { name: 'PowerPack', cmdFunc: 20, ignore: true },

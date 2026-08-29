@@ -9,12 +9,14 @@ export interface IFieldConfigValue {
   timeoutMs: number;
   formatFn?: (input: number) => number;
   required?: boolean;
+  requiredComputeBase?: boolean;
   initChange?: boolean;
 }
 
 export interface IFieldConfigCompute {
   name: string;
   computeFn: (payload: any) => number|string;
+  required?: boolean;
 }
 
 export interface IJoinedStateConfig {
@@ -40,6 +42,40 @@ function formatCents(input: number): number {
 function formatMillis(input: number): number {
   return input / 1000;
 }
+function formatInt(input: number): number {
+  return Math.round(input);
+}
+
+export const STREAMS_CONFIG: IJoinedStateConfig = {
+  mainTimeoutMs: 240000,
+  values: [
+    { name: 'soc', undefValue: 0, timeoutMs: 5400000, initChange: true, requiredComputeBase: true },
+    { name: 'powGetBpCms', undefValue: 0, timeoutMs: 900000, outputName: 'batInputWatts' },
+    { name: 'powGetPv', undefValue: 0, formatFn: formatInt, timeoutMs: 300000, initChange: true, outputName: 'pv1InputWatts' },
+    { name: 'powGetPv2', undefValue: 0, formatFn: formatInt, timeoutMs: 300000, initChange: true, outputName: 'pv2InputWatts' },
+    { name: 'powGetPv3', undefValue: 0, formatFn: formatInt, timeoutMs: 300000, initChange: true, outputName: 'pv3InputWatts' },
+    { name: 'powGetPv4', undefValue: 0, formatFn: formatInt, timeoutMs: 300000, initChange: true, outputName: 'pv4InputWatts' },
+    { name: 'gridConnectionPower', undefValue: 0, formatFn: formatInt, timeoutMs: 900000, outputName: 'gridWatt' },
+    { name: 'inputWatts', undefValue: 0, timeoutMs: 900000 },
+    { name: 'outputWatts', undefValue: 0, timeoutMs: 900000 },
+    { name: 'v1p0_lcdShowSoc', undefValue: 0, timeoutMs: 900000, requiredComputeBase: true },
+    { name: 'v1p0_f32LcdShowSoc', undefValue: 0, formatFn: formatInt, timeoutMs: 900000, requiredComputeBase: true },
+    { name: 'powGetPvSum', undefValue: 0, timeoutMs: 900000 },
+    { name: 'soh', undefValue: 0, timeoutMs: 900000 },
+    { name: 'cycles', undefValue: 0, timeoutMs: 900000 },
+    { name: 'temp', undefValue: 0, timeoutMs: 900000 },
+    { name: 'minDsgSoc', undefValue: 0, timeoutMs: 900000 },
+    { name: 'maxChargeSoc', undefValue: 100, timeoutMs: 900000 },
+  ],
+  compute: [
+    { name: 'pvInputWatts', computeFn: (payload: any): number => {
+        return payload.powGetPvSum || Math.round(((payload.powGetPv || 0) + (payload.powGetPv2 || 0) + (payload.powGetPv3 || 0) + (payload.powGetPv4 || 0)) * 0.97);
+      }},
+    { name: 'batSoc', required: true, computeFn: (payload: any): number => {
+        return payload.soc || payload.v1p0_lcdShowSoc || Math.round(payload.v1p0_f32LcdShowSoc || 0);
+      }},
+  ]
+};
 
 export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
   mainTimeoutMs: 240000,
@@ -59,7 +95,7 @@ export const POWERSTREAM_CONFIG: IJoinedStateConfig = {
   compute: [
     { name: 'pvInputWatts', computeFn: (payload: any): number => {
       return Math.round(((payload.pv1InputWatts || 0) + (payload.pv2InputWatts || 0)) * 9.7) / 10;
-      }}
+      }},
   ]
 };
 
@@ -122,7 +158,7 @@ export type TimedOutListener = (state: JoinedState, isTimeout: boolean) => void;
 export class JoinedState {
   private readonly fields: {[name: string]: IFieldState} = { };
   private createTimeMs: number = 0;
-  private deviceSn: string = '';
+  private deviceSn: string | undefined;
   private topic: string = '';
   private ready: boolean = false;
   private lastHeartbeat: number = 0;
@@ -134,7 +170,7 @@ export class JoinedState {
   }
 
   public apply(topic: string, msg: IEcoflowMessage): boolean {
-    if (!topic || !msg.deviceSn) {
+    if (!topic) {
       return false;
     }
     if (this.isShutdown) {
@@ -146,26 +182,33 @@ export class JoinedState {
     if (!this.topic) {
       this.topic = topic;
       this.deviceSn = msg.deviceSn;
+      if (!this.deviceSn) {
+        const t = topic.split('/');
+        this.deviceSn = t[t.length - 1];
+      }
       let anyRequired = false;
       for (const config of this.jjconfig.values) {
-        anyRequired ||= Boolean(config.required);
+        anyRequired ||= Boolean(config.required || config.requiredComputeBase);
       }
       if (!anyRequired) {
         changed = true;
       }
     }
     for (const key of Object.keys(msg.data)) {
-      const state = this.fields[key];
-      if (!state) {
-        continue;
-      }
-      const valueChanged = state.value !== msg.data[key] || (!state.available|| state.timeout);
-      state.value = msg.data[key];
-      state.lastupMs = now;
-      state.timeout = false;
-      state.available = true;
-      if (state.config.required || (state.config.initChange && valueChanged)) {
-        changed = true;
+      const value = msg.data[key];
+      if ((typeof value) === 'number') {
+        if (this.storeState(key, value, now)) {
+          changed = true;
+        }
+      } else if ((typeof value) === 'object' && value && !Array.isArray(value)) {
+        for (const skey of Object.keys(value)) {
+          const svalue = value[skey];
+          if ((typeof svalue) === 'number') {
+            if (this.storeState(`${key}_${skey}`, svalue, now)) {
+              changed = true;
+            }
+          }
+        }
       }
     }
     if (changed) {
@@ -176,24 +219,39 @@ export class JoinedState {
     }
     return changed;
   }
+  private storeState(key: string, value: number, now: number): boolean {
+    const state = this.fields[key];
+    if (!state) {
+      return false;
+    }
+    const valueChanged = state.value !== value || (!state.available|| state.timeout);
+    state.value = value;
+    state.lastupMs = now;
+    state.timeout = false;
+    state.available = true;
+    return Boolean(state.config.required || state.config.requiredComputeBase || (state.config.initChange && valueChanged));
+  }
   public buildMessage(): NodeMessage|undefined {
     if (!this.ready) {
       return;
     }
-    const payload: {[key: string]: string|number} = { };
+    return {
+      topic: `${this.topic}/aggregated`,
+      payload: { deviceSn: this.deviceSn, ...this.buildPayload() },
+    } as NodeMessage;
+  }
+  public buildPayload(): {[key: string]: string|number} {
+    const ret: {[key: string]: string|number} = { };
     for (const val of Object.values(this.fields)) {
       if (!val.available) {
         continue;
       }
-      payload[val.config.outputName ?? val.config.name] = val.config.formatFn ? val.config.formatFn(val.value) : val.value;
+      ret[val.config.outputName ?? val.config.name] = val.config.formatFn ? val.config.formatFn(val.value) : val.value;
     }
     for (const config of this.jjconfig.compute) {
-      payload[config.name] = config.computeFn(payload);
+      ret[config.name] = config.computeFn(ret);
     }
-    return {
-      topic: `${this.topic}/aggregated`,
-      payload: { deviceSn: this.deviceSn, ...payload },
-    } as NodeMessage;
+    return ret;
   }
   public shutdown(): void {
     this.isShutdown = true;
@@ -214,7 +272,7 @@ export class JoinedState {
   }
   private reset(): void {
     this.createTimeMs = new Date().getTime();
-    this.deviceSn = '';
+    this.deviceSn = undefined;
     this.topic = '';
     this.ready = false;
     this.isShutdown = false;
@@ -240,6 +298,17 @@ export class JoinedState {
         val.lastupMs = 0;
         val.timeout = true;
         val.value = val.config.undefValue;
+        changed = true;
+      }
+    }
+    if (ready && !this.ready) {
+      const payload = this.buildPayload();
+      for (const config of this.jjconfig.compute) {
+        if (config.required && !config.computeFn(payload)) {
+          ready = false;
+        }
+      }
+      if (ready) {
         changed = true;
       }
     }

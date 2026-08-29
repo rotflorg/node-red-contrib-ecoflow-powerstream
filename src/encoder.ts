@@ -1,9 +1,19 @@
 import { IParserResult } from 'protobufjs';
 
 
-export interface ISendMessage {
+interface IResidentLoad {
+  startMin: number;
+  endMin: number;
+  loadPower: number;
+}
+interface ISendMessage {
   pdata?: {
     value?: number;
+    cfgUtcTime?: number;
+    cmsMinDsgSoc?: number;
+    cmsMaxChgSoc?: number;
+    backupReserveSoc?: number;
+    dayResidentLoadList?: { load: IResidentLoad[] };
   };
   src: number;
   dest: number;
@@ -97,6 +107,66 @@ export function encodePowerStreamSetAcWatts(parser: IParserResult, watts: number
     cmdId: 129,
     needAck: 1,
     version: 19,
+    payloadVer: 1,
+    deviceSn,
+  });
+}
+
+export function encodeStreamSeriesGetLatestQuotas(parser: IParserResult): Buffer {
+  return encodeSetMessage(parser, { src: 32, dest: 32, cmdFunc: 20, cmdId: 1 });
+}
+
+export function encodeStreamSeriesSetChargingRange(parser: IParserResult, minDsgSoc: number, maxChargeSoc: number, deviceSn: string): Buffer {
+  return encodeSetMessage(parser, {
+    pdata: { cfgUtcTime: Math.floor(Date.now()/1000), cmsMinDsgSoc: minDsgSoc, cmsMaxChgSoc: maxChargeSoc },
+    src: 32,
+    dest: 2,
+    dSrc: 1,
+    dDest: 1,
+    cmdFunc: 254,
+    cmdId: 17,
+    needAck: 1,
+    productId: 56,
+    version: 3,
+    payloadVer: 1,
+    deviceSn,
+  });
+}
+
+export function encodeStreamSeriesSetBackupReserve(parser: IParserResult, soc: number, deviceSn: string): Buffer {
+  soc = Math.max(0, Math.min(99, Math.round(soc))) || 0;
+  return encodeSetMessage(parser, {
+    pdata: { cfgUtcTime: Math.floor(Date.now()/1000), backupReserveSoc: soc },
+    src: 32,
+    dest: 2,
+    dSrc: 1,
+    dDest: 1,
+    cmdFunc: 254,
+    cmdId: 17,
+    needAck: 1,
+    productId: 56,
+    version: 3,
+    payloadVer: 1,
+    deviceSn,
+  });
+}
+
+export function encodeStreamSeriesSetResidentLoad(parser: IParserResult, loadList: IResidentLoad[], deviceSn: string): Buffer {
+  return encodeSetMessage(parser, {
+    pdata: {
+      cfgUtcTime: Math.floor(Date.now()/1000),
+      // feedGridModePowLimit: powerLimit,
+      dayResidentLoadList: { load: loadList },
+    },
+    src: 32,
+    dest: 2,
+    dSrc: 1,
+    dDest: 1,
+    cmdFunc: 254,
+    cmdId: 17,
+    needAck: 1,
+    productId: 56,
+    version: 3,
     payloadVer: 1,
     deviceSn,
   });

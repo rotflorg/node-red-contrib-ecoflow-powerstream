@@ -5,18 +5,76 @@ import {
   encodePowerStreamGetLatestQuotas,
   encodePowerStreamSetAcWatts,
   encodePowerStreamSetPing,
-  encodePowerStreamSetPrioritizePowerStorage
+  encodePowerStreamSetPrioritizePowerStorage, encodeStreamSeriesGetLatestQuotas, encodeStreamSeriesSetBackupReserve, encodeStreamSeriesSetChargingRange, encodeStreamSeriesSetResidentLoad
 } from './encoder';
 
 
 
 const NODE_TYPE = String('ecoflow-cmd');
 
-type DeviceType = 'powerstream';
+type DeviceType = 'powerstream' | 'streams';
 
 interface IConvertedMessage {
   payload: Buffer,
   method: 'get' | 'set';
+}
+
+function getPayloadNumber(pl: any, key: string): number | undefined {
+  let ret = pl?.[key];
+  if (typeof ret === 'number') {
+    return ret;
+  }
+  if (typeof ret === 'string') {
+    ret = parseInt(ret, 10);
+    if (isNaN(ret)) {
+      return;
+    }
+    return ret;
+  }
+}
+
+function processStreamSeriesMessage(msg: NodeMessage, parser: IParserResult, deviceSn: string): IConvertedMessage[]|string {
+  if (!msg.payload || typeof msg.payload !== 'object') {
+    return 'No JSON';
+  }
+  const pl = msg.payload as any;
+  const command = pl?.command;
+  if (typeof command !== 'string') {
+    return 'No command defined';
+  }
+  let val: number | undefined;
+  let val2: number | undefined;
+  switch (command) {
+    case 'heartbeat':
+      return [
+        { method: 'get', payload: encodeStreamSeriesGetLatestQuotas(parser) },
+        { method: 'set', payload: encodePowerStreamSetPing(parser, Math.round(Date.now())%65536, deviceSn) },
+      ];
+    case 'setBackupReserve':
+      val = getPayloadNumber(pl, 'value');
+      if ((typeof val !== 'number') || val<0 || val>100) {
+        return `Invalid backup reserve percentage: ${val}`;
+      }
+      return [{ method: 'set', payload: encodeStreamSeriesSetBackupReserve(parser, val, deviceSn) }];
+    case 'setChargingRange':
+      val = getPayloadNumber(pl, 'min');
+      if ((typeof val !== 'number') || val<1 || val>99) {
+        return `Invalid minimum charging range percentage: ${val}`;
+      }
+      val2 = getPayloadNumber(pl, 'max');
+      if ((typeof val2 !== 'number') || val2<=val || val2>100) {
+        return `Invalid maximum charging range percentage: ${val2}`;
+      }
+      return [{ method: 'set', payload: encodeStreamSeriesSetChargingRange(parser, val, val2, deviceSn) }];
+    case 'setResidentLoad':
+      val = getPayloadNumber(pl, 'value');
+      if ((typeof val !== 'number') || val<0 || val>800) {
+        return `Invalid backup reserve percentage: ${val}`;
+      }
+      val = Math.round(val / 10) * 10;
+      return [{ method: 'set', payload: encodeStreamSeriesSetResidentLoad(parser, [{ startMin: 0, endMin: 1440, loadPower: val }], deviceSn) }];
+  }
+  return `Unknown command ${command}`;
 }
 
 function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, deviceSn: string): IConvertedMessage[]|string {
@@ -28,13 +86,7 @@ function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, devi
   if (typeof command !== 'string') {
     return 'No command defined';
   }
-  let val: any = pl.value;
-  if (typeof val === 'string') {
-    val = parseInt(val, 10);
-    if (isNaN(val)) {
-      return 'Invalid value';
-    }
-  }
+  const val: number | undefined = getPayloadNumber(pl, 'value');
   if (typeof val !== 'number') {
     return 'Invalid value type';
   }
@@ -46,6 +98,8 @@ function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, devi
       ];
     case 'getLatestQuotas':
       return [{ method: 'get', payload: encodePowerStreamGetLatestQuotas(parser) }];
+    case 'ping':
+      return [{ method: 'set', payload: encodePowerStreamSetPing(parser, Math.round(val)%65536, deviceSn) }];
     case 'setAcWatts':
       if (val<0 || val>800) {
         return `Invalid watts: ${val}`;
@@ -53,8 +107,6 @@ function processPowerstreamMessage(msg: NodeMessage, parser: IParserResult, devi
       return [{ method: 'set', payload: encodePowerStreamSetAcWatts(parser, val, deviceSn) }];
     case 'setPrioritizePowerStorage':
       return [{ method: 'set', payload: encodePowerStreamSetPrioritizePowerStorage(parser, Boolean(val), deviceSn) }];
-    case 'ping':
-      return [{ method: 'set', payload: encodePowerStreamSetPing(parser, Math.round(val)%65536, deviceSn) }];
   }
   return `Unknown command ${command}`;
 }
@@ -80,8 +132,13 @@ const nodeInit: NodeInitializer = (RED): void => {
         node.status({ fill: 'red', shape: 'dot', text: 'Missing deviceSn in message' });
         return;
       }
-      if (devicetype === 'powerstream') {
-        converted = processPowerstreamMessage(msg, parser, deviceSn);
+      switch (devicetype) {
+        case 'powerstream':
+          converted = processPowerstreamMessage(msg, parser, deviceSn);
+          break;
+        case 'streams':
+          converted = processStreamSeriesMessage(msg, parser, deviceSn);
+          break;
       }
       if (!converted) {
         node.status({ fill: 'red', shape: 'dot', text: 'Invalid device type' });

@@ -1,7 +1,6 @@
 import { Node, NodeInitializer, NodeMessage } from 'node-red';
-import { decodeEcoflowMessage, IEcoflowMessage } from './decoder';
-import { DELTA2MAX_CONFIG, IJoinedStateConfig, JoinedState, POWERSTREAM_CONFIG, TimedOutListener } from './state';
-import { IParserResult } from 'protobufjs';
+import { IEcoflowMessage, processEcoflowStreamMessage } from './decoder';
+import { DELTA2MAX_CONFIG, IJoinedStateConfig, JoinedState, POWERSTREAM_CONFIG, STREAMS_CONFIG, TimedOutListener } from './state';
 import { parseProtocol } from './protocol';
 
 
@@ -14,7 +13,7 @@ function toUint8Array(msg: NodeMessage): Uint8Array|undefined {
   if (!Buffer.isBuffer(payload)) {
     return;
   }
-  return payload;
+  return Uint8Array.from(payload);
 }
 
 function getSerialFromTopic(topic: string): string {
@@ -57,27 +56,8 @@ function convertDeltaJsonData(params: any): any {
 
 const NODE_TYPE = String('ecoflow-in');
 
-type DeviceType = 'powerstream' | 'delta2max';
+type DeviceType = 'powerstream' | 'streams' | 'delta2max';
 type OutputMessagesType = 'translated' | 'aggregated' | 'both';
-
-
-function processPowerstreamMessage(node: Node, state: JoinedState, outmsgtype: OutputMessagesType, parser: IParserResult, msg: NodeMessage): boolean {
-  const buffer = toUint8Array(msg);
-  if (!buffer) {
-    return false;
-  }
-  const topic = msg.topic || '/ecoflow/powerstream';
-  let ret = false;
-  for (const payload of decodeEcoflowMessage(parser, buffer)) {
-    if (state.apply(topic, payload)) {
-      ret = true;
-    }
-    if (outmsgtype !== 'aggregated') {
-      node.send({topic, payload});
-    }
-  }
-  return ret;
-}
 
 function processDelta2MaxMessage(node: Node, state: JoinedState, outmsgtype: OutputMessagesType, msg: NodeMessage): boolean {
   const inPayload = msg.payload as any;
@@ -104,6 +84,17 @@ function processDelta2MaxMessage(node: Node, state: JoinedState, outmsgtype: Out
   return ret;
 }
 
+function getStateConfig(devicetype: DeviceType) {
+  switch (devicetype) {
+    case 'delta2max':
+      return DELTA2MAX_CONFIG;
+    case 'streams':
+      return STREAMS_CONFIG;
+    default:
+      return POWERSTREAM_CONFIG;
+  }
+}
+
 const nodeInit: NodeInitializer = (RED): void => {
   const parser = parseProtocol();
   function EcoflowInNode(config: any) {
@@ -125,14 +116,20 @@ const nodeInit: NodeInitializer = (RED): void => {
       }
       setNodeStatus(isTimeout);
     };
-    const cfg: IJoinedStateConfig = devicetype === 'delta2max' ? DELTA2MAX_CONFIG : POWERSTREAM_CONFIG;
+    const cfg: IJoinedStateConfig = getStateConfig(devicetype);
     const state = new JoinedState(cfg, timeoutFactor, timedOutListener);
     node.on('input', (msg) => {
       let sendJoined: boolean;
       if (devicetype === 'delta2max') {
         sendJoined = processDelta2MaxMessage(node, state, outmsgtype, msg);
       } else {
-        sendJoined = processPowerstreamMessage(node, state, outmsgtype, parser, msg);
+        const info = processEcoflowStreamMessage(state, parser, msg.topic, toUint8Array(msg));
+        sendJoined = info.sendJoined;
+        if (outmsgtype !== 'aggregated') {
+          for (const payload of info.processedMessages) {
+            node.send({ topic: info.topic, payload });
+          }
+        }
       }
       if (!sendJoined) {
         return;

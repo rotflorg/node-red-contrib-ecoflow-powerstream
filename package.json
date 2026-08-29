@@ -1,6 +1,6 @@
 {
   "name": "@rotflorg/node-red-contrib-ecoflow-powerstream",
-  "version": "0.7.3",
+  "version": "1.0.0",
   "description": "Extract data from Ecoflow PowerStream",
   "scripts": {
     "dist": "npm run lint && npm run test",
@@ -36,19 +36,21 @@
     }
   },
   "dependencies": {
-    "protobufjs": "^7.5.4"
+    "protobufjs": "^8.7.2"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@eslint/js": "^10.0.1",
     "@types/node-red": "^1.3.5",
-    "@typescript-eslint/eslint-plugin": "^7.11.0",
-    "@typescript-eslint/parser": "^7.11.0",
-    "eslint": "^8.57.0",
-    "jest": "^29.7.0",
-    "node-red": "^4.1.2",
-    "node-red-node-test-helper": "^0.3.5",
-    "rimraf": "^6.1.2",
+    "@typescript-eslint/eslint-plugin": "^8.67.0",
+    "@typescript-eslint/parser": "^8.67.0",
+    "eslint": "^10.9.0",
+    "jest": "^30.4.2",
+    "node-red": "^5.0.4",
+    "node-red-node-test-helper": "^0.3.6",
+    "rimraf": "^6.1.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.9.3"
   },
   "bugs": {
     "url": "https://github.com/rotflorg/node-red-contrib-ecoflow-powerstream/issues"
